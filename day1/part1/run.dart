@@ -5,8 +5,7 @@ Future<void> main() async {
 
   var currentTotal = 0;
   var max = 0;
-  for (int i = 0; i < lines.length; i++) {
-    var line = lines[i];
+  for (final line in lines) {
     if (line.isEmpty) {
       if (currentTotal > max) {
         max = currentTotal;

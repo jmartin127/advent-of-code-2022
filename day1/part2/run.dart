@@ -5,8 +5,7 @@ Future<void> main() async {
 
   var currentTotal = 0;
   List<int> allVals = [];
-  for (int i = 0; i < lines.length; i++) {
-    var line = lines[i];
+  for (final line in lines) {
     if (line.isEmpty) {
       allVals.add(currentTotal);
       currentTotal = 0;

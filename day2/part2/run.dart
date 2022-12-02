@@ -18,6 +18,10 @@ const shape_selected = {'X': 1, 'Y': 2, 'Z': 3};
 
 // X means you need to lose, Y means you need to end the round in a draw, and Z means you need to win. Good luck!"
 
+const draw = {'A': 'X', 'B': 'Y', 'C': 'Z'};
+const lose = {'A': 'Z', 'B': 'X', 'C': 'Y'};
+const win = {'A': 'Y', 'B': 'Z', 'C': 'X'};
+
 Future<void> main() async {
   final lines = await Util.readFileAsStrings('input.txt');
 
@@ -29,32 +33,11 @@ Future<void> main() async {
 
     var actualMe = '';
     if (me == 'Y') {
-      // Y means you need to end the round in a draw
-      if (them == 'A') {
-        actualMe = 'X';
-      } else if (them == 'B') {
-        actualMe = 'Y';
-      } else {
-        actualMe = 'Z';
-      }
+      actualMe = draw[them]!;
     } else if (me == 'X') {
-      // X means you need to lose
-      if (them == 'A') {
-        actualMe = 'Z';
-      } else if (them == 'B') {
-        actualMe = 'X';
-      } else {
-        actualMe = 'Y';
-      }
+      actualMe = lose[them]!;
     } else {
-      // Z means you need to win
-      if (them == 'A') {
-        actualMe = 'Y';
-      } else if (them == 'B') {
-        actualMe = 'Z';
-      } else {
-        actualMe = 'X';
-      }
+      actualMe = win[them]!;
     }
 
     total += result[them + actualMe]! + shape_selected[actualMe]!;

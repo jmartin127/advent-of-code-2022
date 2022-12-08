@@ -26,7 +26,7 @@ class Util {
     final lines = await readFileAsStrings(filepath);
     List<List<int>> result = [];
     for (final line in lines) {
-      final parts = line.split(' ');
+      final parts = line.split('');
       List<int> row = [];
       for (final part in parts) {
         if (part.isEmpty) {

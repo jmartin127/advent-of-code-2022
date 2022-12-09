@@ -1,5 +1,9 @@
-import '../util/util.dart';
+import 'package:test/expect.dart';
+import 'package:test/scaffolding.dart';
 
 Future<void> main() async {
-  await Util.readIntMatrix('data/int-matrix.txt');
+  test('Test int matrix creation', () {
+    final matrix = ('data/int-matrix.txt');
+    expect(matrix.length, 5);
+  });
 }

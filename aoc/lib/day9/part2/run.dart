@@ -27,7 +27,7 @@ Future<void> main() async {
   }
   positionsVisited['${knotsById[9]!.x}.${knotsById[9]!.y}'] = true;
   for (final line in lines) {
-    print('#################### INSTRUCTION: $line ####################');
+    // print('#################### INSTRUCTION: $line ####################');
     final lineParts = line.split(' ');
     final direction = lineParts[0];
     final numSteps = int.parse(lineParts[1]);
@@ -59,8 +59,8 @@ Future<void> main() async {
       // mark the 9th one as visited
       positionsVisited['${knotsById[9]!.x}.${knotsById[9]!.y}'] = true;
     }
-    printResult(knotsById);
-    print('');
+    // printResult(knotsById);
+    // print('');
   }
   for (final pos in positionsVisited.keys) {
     print(pos);
@@ -121,7 +121,7 @@ MakeMove chooseDirectionAndMagnitude(
     if (headX - tailX == 2) {
       // tail is to the left
       // check if the tail is up or down
-      if (headY - tailY == 1) {
+      if (headY - tailY > 0) {
         // tail is above
         // move diag down and right
         return MakeMove(1, 1, 1);
@@ -132,7 +132,7 @@ MakeMove chooseDirectionAndMagnitude(
     } else if (tailX - headX == 2) {
       // tail is to the right
       // check if the tail is up or down
-      if (headY - tailY == 1) {
+      if (headY - tailY > 0) {
         // tail is above
         // move diag down and right
         return MakeMove(1, -1, 1);
@@ -143,7 +143,7 @@ MakeMove chooseDirectionAndMagnitude(
     } else if (headY - tailY == 2) {
       // tail is up
       // check if the head is left or right
-      if (tailX - headX == 1) {
+      if (tailX - headX > 0) {
         // tail is right
         // move diag left and down
         return MakeMove(1, -1, 1);
@@ -154,7 +154,7 @@ MakeMove chooseDirectionAndMagnitude(
     } else if (tailY - headY == 2) {
       // tail is down
       // check if the head is left or right
-      if (tailX - headX == 1) {
+      if (tailX - headX > 0) {
         // tail is right
         // move diag left and down
         return MakeMove(1, -1, -1);

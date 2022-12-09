@@ -1,19 +1,22 @@
-import '../../util/util.dart';
+import '../../src/util.dart';
 
 Future<void> main() async {
   final lines = await Util.readFileAsStrings('input.txt');
 
   var currentTotal = 0;
-  var max = 0;
+  List<int> allVals = [];
   for (final line in lines) {
     if (line.isEmpty) {
-      if (currentTotal > max) {
-        max = currentTotal;
-      }
+      allVals.add(currentTotal);
       currentTotal = 0;
     } else {
       currentTotal += int.parse(line);
     }
   }
-  print(max);
+  allVals.add(currentTotal);
+  allVals.sort();
+
+  print(allVals[allVals.length - 1] +
+      allVals[allVals.length - 2] +
+      allVals[allVals.length - 3]);
 }

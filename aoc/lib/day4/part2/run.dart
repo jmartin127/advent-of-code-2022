@@ -1,4 +1,4 @@
-import '../../util/util.dart';
+import '../../src/util.dart';
 
 Future<void> main() async {
   final lines = await Util.readFileAsStrings('input.txt');

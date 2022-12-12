@@ -9,7 +9,7 @@ class Point {
 Future<void> main() async {
   final matrix = await Util.readFileAsStrings('input.txt');
 
-  /// Hash all the values in the matrix for eash lookup
+  /// Hash all the values in the matrix for easy lookup
   int startId = 0;
   int endId = 0;
   int id = 0;
@@ -28,6 +28,7 @@ Future<void> main() async {
     }
   }
 
+  // Record all valid transitions in the graph
   Map<int, List<int>> validNodeTransitions = {};
   for (int i = 0; i < matrix.length; i++) {
     final row = matrix[i];
@@ -63,6 +64,8 @@ Future<void> main() async {
       print('Can Transition from $nodeId to $toIds');
     }
   }
+
+  // Solve via Dijkstra's
 }
 
 /// Determines if a given transition is a valid transition in the graph

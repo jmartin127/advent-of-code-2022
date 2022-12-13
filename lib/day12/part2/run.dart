@@ -11,7 +11,7 @@ Future<void> main() async {
   final matrix = await Util.readFileAsStrings('input.txt');
 
   /// Hash all the values in the matrix for easy lookup
-  int startId = 0;
+  List<int> startIds = [];
   int endId = 0;
   int id = 0;
   Map<String, int> idsByPoint = {};
@@ -21,8 +21,8 @@ Future<void> main() async {
       final val = matrix[i][j];
       id++;
       idsByPoint['$i.$j'] = id;
-      if (val == 'S') {
-        startId = id;
+      if (val == 'a') {
+        startIds.add(id);
       } else if (val == 'E') {
         endId = id;
       }
@@ -67,9 +67,16 @@ Future<void> main() async {
   }
 
   // Solve via Dijkstra's
-  var output2 =
-      Dijkstra.findPathFromGraph(validNodeTransitions, startId, endId);
-  print(output2.length - 1);
+  int min = 1000000;
+  for (final startId in startIds) {
+    var output2 =
+        Dijkstra.findPathFromGraph(validNodeTransitions, startId, endId);
+    final answer = output2.length - 1;
+    if (answer > 0 && answer < min) {
+      min = answer;
+    }
+  }
+  print(min);
 }
 
 /// Determines if a given transition is a valid transition in the graph

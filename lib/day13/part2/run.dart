@@ -21,6 +21,7 @@ Future<void> main() async {
     }
   }
 
+  // use the sort function we built!
   allLines.sort((a, b) => comparePackets(a, b) == false
       ? 1
       : comparePackets(a, b) == true
@@ -37,18 +38,7 @@ Future<void> main() async {
       decoderKeyTwoIndex = i + 1;
     }
   }
-  // too low: 20099
-  print(decoderKeyOneIndex);
-  print(decoderKeyTwoIndex);
   print(decoderKeyOneIndex * decoderKeyTwoIndex);
-
-  // // create a sorted list, adding each item where it goes
-  // var list = LinkedList();
-  // for (final toAdd in lines) {
-  //   if (l.isEmpty) {
-  //     l.add(toAdd);
-  //   } else {}
-  // }
 }
 
 // returns true if in the right order

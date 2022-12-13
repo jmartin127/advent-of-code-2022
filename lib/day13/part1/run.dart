@@ -32,6 +32,67 @@ bool comparePackets(String packet1, String packet2) {
   return true;
 }
 
+// [[1],[2,3,4]]
+List<dynamic> parsePacket(String packet) {
+  Map<int, List<dynamic>> listByStartPos = {};
+
+  // print('INPUT: $packet');
+  // final parsingStack = Stack<String>();
+  final stackOfListStartPos = Stack<int>();
+  List<dynamic>? currentList;
+  for (int i = 0; i < packet.length; i++) {
+    final char = packet[i];
+    if (char == '[') {
+      // create a new list
+      // set the list by start position
+      List<dynamic> newList = [];
+      listByStartPos[i] = newList;
+      stackOfListStartPos.push(i);
+      // add this list as an element to the current
+      if (currentList != null) {
+        currentList.add(newList);
+      }
+      // set this list as the current list
+      currentList = newList;
+    } else if (char == ']') {
+      // pop from the stack to set the new list
+      if (stackOfListStartPos.isNotEmpty) {
+        final startParenPos = stackOfListStartPos.pop();
+        currentList = listByStartPos[startParenPos]!;
+      }
+      // if the next character is a closing paren, we're done, otherwise pop next and set as current
+      if (i != packet.length - 1) {
+        final nextChar = packet[i + 1];
+        if (nextChar != ']') {
+          if (stackOfListStartPos.isNotEmpty) {
+            final startParenPos = stackOfListStartPos.pop();
+            // print('Setting list to list starting at: $startParenPos');
+            currentList = listByStartPos[startParenPos]!;
+          }
+        }
+      }
+    } else if (char == ',') {
+      // nothing to do here, just go to the net element
+    } else {
+      // must be a number, read until no more numbers
+      var numberStr = '';
+      for (int j = i; j < packet.length; j++) {
+        var numberChar = packet[j];
+        if (numberChar == ',' || numberChar == '[' || numberChar == ']') {
+          break;
+        }
+        numberStr = numberStr + numberChar;
+      }
+      // then add the number to the list
+      final number = int.parse(numberStr);
+      currentList!.add(number);
+    }
+  }
+
+  // print(listByStartPos[0]!);
+  return listByStartPos[0]!;
+}
+
 Element? getNextElement(
     String packet, int startIndex, Map<int, int> endParenPosByStart) {
   // for example, just a single number
@@ -64,40 +125,3 @@ Element? getNextElement(
     return Element(numberString, -1);
   }
 }
-
-// // [[1],[2,3,4]]
-// List<dynamic> parsePacket(String packet) {
-//   Map<String, List<dynamic>> listByPos = {};
-
-//   print('INPUT: $packet');
-//   final parsingStack = Stack<String>();
-//   for (int i = 0; i < packet.length; i++) {
-//     final char = packet[i];
-//     // found the end of a list
-//     if (char == ']') {
-//       // pop from the stack until we get to an opening paren
-//       String withinParens = '';
-//       while (parsingStack.isNotEmpty) {
-//         final val = parsingStack.pop();
-//         if (val == '[') {
-//           print('Found: $withinParens');
-//           final idOfOpenParen = parsingStack.pop();
-//           print('List starts at: $idOfOpenParen');
-//           final currentList = listByPos[idOfOpenParen];
-//           break;
-//         }
-//         withinParens = val + withinParens;
-//       }
-//     } else {
-//       if (char == '[') {
-//         final parenId = '$i';
-//         listByPos[parenId] = [];
-//         parsingStack.push(
-//             parenId); // push a fake element on the stack that is the position of the opening paren
-//       }
-//       parsingStack.push(char);
-//     }
-//   }
-
-//   return [];
-// }

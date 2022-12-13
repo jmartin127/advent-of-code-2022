@@ -3,6 +3,32 @@ import 'package:test/expect.dart';
 import 'package:test/scaffolding.dart';
 
 Future<void> main() async {
+  test('parsePacket', () {
+    var result = parsePacket('[1,1,3,1,1]');
+    expect(result.length, 5);
+
+    result = parsePacket('[[1],[2,3,4]]');
+    expect(result.length, 2);
+
+    result = parsePacket('[9]');
+    expect(result.length, 1);
+
+    result = parsePacket('[[4,4],4,4]');
+    expect(result.length, 3);
+
+    result = parsePacket('[7,7,7,7]');
+    expect(result.length, 4);
+
+    result = parsePacket('[]');
+    expect(result.length, 0);
+
+    result = parsePacket('[[[]]]');
+    expect(result.length, 1);
+
+    result = parsePacket('[1,[2,[3,[4,[5,6,7]]]],8,9]');
+    expect(result.length, 4);
+  });
+
   test('getNextElement', () {
     // [1,1,3,1,1] ==> returns 1
     var result = getNextElement('[1,1,3,1,1]', 0, {0: 10});

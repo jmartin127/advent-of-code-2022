@@ -4,6 +4,33 @@ import 'package:test/scaffolding.dart';
 
 Future<void> main() async {
   test('parsePacket', () {
+    var result = comparePackets('[1,1,3,1,1]', '[1,1,5,1,1]');
+    expect(result, true);
+
+    result = comparePackets('[[1],[2,3,4]]', '[[1],4]');
+    expect(result, true);
+
+    result = comparePackets('[9]', '[[8,7,6]]');
+    expect(result, false);
+
+    result = comparePackets('[[4,4],4,4]', '[[4,4],4,4,4]');
+    expect(result, true);
+
+    result = comparePackets('[7,7,7,7]', '[7,7,7]');
+    expect(result, false);
+
+    result = comparePackets('[]', '[3]');
+    expect(result, true);
+
+    result = comparePackets('[[[]]]', '[[]]');
+    expect(result, false);
+
+    result = comparePackets(
+        '[1,[2,[3,[4,[5,6,7]]]],8,9]', '[1,[2,[3,[4,[5,6,0]]]],8,9]');
+    expect(result, false);
+  });
+
+  test('parsePacket', () {
     var result = parsePacket('[1,1,3,1,1]');
     expect(result.length, 5);
 

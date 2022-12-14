@@ -113,10 +113,7 @@ Future<void> main() async {
       break;
     }
     print(numSandDropped);
-    //printMatrix(matrix);
-    if (numSandDropped == 2059) {
-      printMatrix(matrix);
-    }
+    // printMatrix(matrix);
   }
   print(numSandDropped);
 
@@ -141,43 +138,46 @@ bool moveSandUntilRest(List<List<String>> matrix, Point sand) {
 
 Point? moveSandIfPossible(List<List<String>> matrix, Point sand) {
   // A unit of sand always falls down one step if possible.
-  if (!isOutOfBounds(matrix, sand.x, sand.y + 1)) {
-    final charOneDown = matrix[sand.y + 1][sand.x];
-    if (charOneDown == '.') {
-      if (matrix[sand.y][sand.x] != '+') {
-        // don't over-write the plus
-        matrix[sand.y][sand.x] = '.';
-      }
+  // if (isOutOfBounds(matrix, sand.x, sand.y + 1)) {
+  //   return null;
+  // }
+  final charOneDown = matrix[sand.y + 1][sand.x];
+  if (charOneDown == '.') {
+    if (matrix[sand.y][sand.x] != '+') {
+      // don't over-write the plus
       matrix[sand.y][sand.x] = '.';
-      matrix[sand.y + 1][sand.x] = 'o';
-      return Point(sand.x, sand.y + 1);
     }
+    matrix[sand.y][sand.x] = '.';
+    matrix[sand.y + 1][sand.x] = 'o';
+    return Point(sand.x, sand.y + 1);
   }
 
   // If the tile immediately below is blocked (by rock or sand), the unit of
   // sand attempts to instead move diagonally one step down and to the left.
-  if (!isOutOfBounds(matrix, sand.x - 1, sand.y + 1)) {
-    final charLeftDiag = matrix[sand.y + 1][sand.x - 1];
-    if (charLeftDiag == '.') {
-      if (matrix[sand.y][sand.x] != '+') {
-        matrix[sand.y][sand.x] = '.';
-      }
-      matrix[sand.y + 1][sand.x - 1] = 'o';
-      return Point(sand.x - 1, sand.y + 1);
+  // if (isOutOfBounds(matrix, sand.x - 1, sand.y + 1)) {
+  //   return null;
+  // }
+  final charLeftDiag = matrix[sand.y + 1][sand.x - 1];
+  if (charLeftDiag == '.') {
+    if (matrix[sand.y][sand.x] != '+') {
+      matrix[sand.y][sand.x] = '.';
     }
+    matrix[sand.y + 1][sand.x - 1] = 'o';
+    return Point(sand.x - 1, sand.y + 1);
   }
 
   // If that tile is blocked, the unit of sand attempts to instead move
   // diagonally one step down and to the right.
-  if (!isOutOfBounds(matrix, sand.x + 1, sand.y + 1)) {
-    final charRightDiag = matrix[sand.y + 1][sand.x + 1];
-    if (charRightDiag == '.') {
-      if (matrix[sand.y][sand.x] != '+') {
-        matrix[sand.y][sand.x] = '.';
-      }
-      matrix[sand.y + 1][sand.x + 1] = 'o';
-      return Point(sand.x + 1, sand.y + 1);
+  // if (isOutOfBounds(matrix, sand.x + 1, sand.y + 1)) {
+  //   return null;
+  // }
+  final charRightDiag = matrix[sand.y + 1][sand.x + 1];
+  if (charRightDiag == '.') {
+    if (matrix[sand.y][sand.x] != '+') {
+      matrix[sand.y][sand.x] = '.';
     }
+    matrix[sand.y + 1][sand.x + 1] = 'o';
+    return Point(sand.x + 1, sand.y + 1);
   }
 
   // If all three possible destinations are blocked, the unit of sand comes to

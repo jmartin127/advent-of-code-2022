@@ -57,6 +57,8 @@ Future<void> main() async {
       }
     }
   }
+
+  // set the bounds of the matrix
   int xBuffer = 1000; // allow for infinite growth
   maxY += 2;
   minX -= xBuffer;
@@ -102,7 +104,7 @@ Future<void> main() async {
   }
 
   // Add the start of the sand
-  matrix[0][convertXCoordToMatrixCoord(500, minX)] = '.';
+  matrix[0][convertXCoordToMatrixCoord(500, minX)] = '+';
 
   // Start dropping sand pellets
   int numSandDropped = 0;
@@ -118,7 +120,7 @@ Future<void> main() async {
     }
   }
 
-  // add one since we are checking the condition just before the last sand
+  // add one more since we are checking the condition just before the last sand
   print(numSandDropped + 1);
 }
 

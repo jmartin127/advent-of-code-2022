@@ -82,7 +82,7 @@ Future<void> main() async {
       final yEnd = line.from.y > line.to.y ? line.from.y : line.to.y;
       final xCoord = convertXCoordToMatrixCoord(line.from.x, minX);
       for (int y = yBegin; y <= yEnd; y++) {
-        matrix[xCoord][y] = '#';
+        matrix[y][xCoord] = '#';
       }
     } else {
       // horizontal line (y's are the same)
@@ -94,13 +94,13 @@ Future<void> main() async {
       print('xBegin: $xBegin, xEnd: $xEnd');
       for (int x = xBeginCoord; x <= xEndCoord; x++) {
         print('x $x, y $yCoord');
-        matrix[x][yCoord] = '#';
+        matrix[yCoord][x] = '#';
       }
     }
   }
 
   // Add the start of the sand
-  matrix[convertXCoordToMatrixCoord(500, minX)][0] = '+';
+  matrix[0][convertXCoordToMatrixCoord(500, minX)] = '+';
   printMatrix(matrix);
 
   // Start dropping sand pellets
@@ -113,10 +113,15 @@ Future<void> main() async {
       break;
     }
     print(numSandDropped);
+    //printMatrix(matrix);
+    if (numSandDropped == 2059) {
+      printMatrix(matrix);
+    }
   }
   print(numSandDropped);
 
-  //printMatrix(matrix);
+  // printMatrix(matrix);
+  // not correct: 2059, 2058
 }
 
 bool moveSandUntilRest(List<List<String>> matrix, Point sand) {
@@ -137,10 +142,14 @@ bool moveSandUntilRest(List<List<String>> matrix, Point sand) {
 Point? moveSandIfPossible(List<List<String>> matrix, Point sand) {
   // A unit of sand always falls down one step if possible.
   if (!isOutOfBounds(matrix, sand.x, sand.y + 1)) {
-    final charOneDown = matrix[sand.x][sand.y + 1];
+    final charOneDown = matrix[sand.y + 1][sand.x];
     if (charOneDown == '.') {
-      matrix[sand.x][sand.y] = '.';
-      matrix[sand.x][sand.y + 1] = 'o';
+      if (matrix[sand.y][sand.x] != '+') {
+        // don't over-write the plus
+        matrix[sand.y][sand.x] = '.';
+      }
+      matrix[sand.y][sand.x] = '.';
+      matrix[sand.y + 1][sand.x] = 'o';
       return Point(sand.x, sand.y + 1);
     }
   }
@@ -148,10 +157,12 @@ Point? moveSandIfPossible(List<List<String>> matrix, Point sand) {
   // If the tile immediately below is blocked (by rock or sand), the unit of
   // sand attempts to instead move diagonally one step down and to the left.
   if (!isOutOfBounds(matrix, sand.x - 1, sand.y + 1)) {
-    final charLeftDiag = matrix[sand.x - 1][sand.y + 1];
+    final charLeftDiag = matrix[sand.y + 1][sand.x - 1];
     if (charLeftDiag == '.') {
-      matrix[sand.x][sand.y] = '.';
-      matrix[sand.x - 1][sand.y + 1] = 'o';
+      if (matrix[sand.y][sand.x] != '+') {
+        matrix[sand.y][sand.x] = '.';
+      }
+      matrix[sand.y + 1][sand.x - 1] = 'o';
       return Point(sand.x - 1, sand.y + 1);
     }
   }
@@ -159,10 +170,12 @@ Point? moveSandIfPossible(List<List<String>> matrix, Point sand) {
   // If that tile is blocked, the unit of sand attempts to instead move
   // diagonally one step down and to the right.
   if (!isOutOfBounds(matrix, sand.x + 1, sand.y + 1)) {
-    final charRightDiag = matrix[sand.x + 1][sand.y + 1];
+    final charRightDiag = matrix[sand.y + 1][sand.x + 1];
     if (charRightDiag == '.') {
-      matrix[sand.x][sand.y] = '.';
-      matrix[sand.x + 1][sand.y + 1] = 'o';
+      if (matrix[sand.y][sand.x] != '+') {
+        matrix[sand.y][sand.x] = '.';
+      }
+      matrix[sand.y + 1][sand.x + 1] = 'o';
       return Point(sand.x + 1, sand.y + 1);
     }
   }
@@ -186,7 +199,7 @@ void printMatrix(List<List<String>> matrix) {
   for (int i = 0; i < matrix.length; i++) {
     final row = matrix[i];
     for (int j = 0; j < row.length; j++) {
-      stdout.write(matrix[j][i]);
+      stdout.write(matrix[i][j]);
     }
     print('');
   }

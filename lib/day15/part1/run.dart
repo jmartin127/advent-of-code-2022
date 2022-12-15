@@ -43,70 +43,32 @@ Future<void> main() async {
   // define the line at y=10
   int yRef = 10; // TODO change to test
   // int yRef = 2000000; // TODO change to test
-  int xBuffer = 20000000;
+  int xBuffer = 10000000;
   int xStart = -1 * xBuffer;
   int xEnd = xBuffer;
-  Line refLine = Line(Point(xStart, yRef), Point(xEnd, yRef));
+  //Line refLine = Line(Point(xStart, yRef), Point(xEnd, yRef));
 
-  // find lines that intersect the line
-  List<Line> intersectingLines = [];
-  for (final line in lines) {
-    if (linesIntersect(line, refLine)) {
-      intersectingLines.add(line);
-    }
-  }
-  for (final line in intersectingLines) {
-    print(line);
-  }
+  int count = 0;
+  for (int x = xStart; x < xEnd; x++) {
+    final refPoint = Point(x, yRef);
+    for (final line in lines) {
+      // calculate the distance of the sensor from the beacon
+      final lineDist = euclideanDistance(line.sensor, line.beacon);
 
-  // alternate way to find intersecting lines since y is fixed
-  for (final line in lines) {
-    if (line.sensor.y <= yRef && line.beacon.y >= yRef ||
-        line.sensor.y >= yRef && line.beacon.y <= yRef) {
-      print('Intersecing line: $line');
-    }
-  }
-  print('Next step... finding intersecting points');
-
-  // find how many points intersect with other lines
-  Map<int, bool> intersectingPoints = {};
-  for (final line in lines) {
-    print('LINE: $line');
-
-    // // find the point where the line intersects the ref line
-    // int xCoord = 0;
-    // if (slopeIsUndefined(line.sensor, line.beacon)) {
-    //   print('Vertical line: $line');
-    //   xCoord = line.sensor.x; // pick either x, it is a vertical line
-    // } else {
-    //   double m = findSlope(line.sensor, line.beacon);
-    //   double b = solveForYIntercept(line.sensor.y, line.sensor.x, m);
-    //   xCoord = findXCoord(yRef, b, m);
-    // }
-
-    // print('X COORD: $xCoord');
-    // Point intersectionPoint = Point(xCoord, yRef);
-
-    // compute the distance of the sensor to line intersection point
-    int lineLen = euclideanDistance(line.sensor, line.beacon);
-    // print(
-    //     '**** LINE len: $lineLen, from ${line.sensor}, to $intersectionPoint');
-    for (int x = xStart; x < xEnd; x++) {
-      final refPoint = Point(x, yRef);
-      // compute the length from the ref point to the sensor
-      int refLen = euclideanDistance(refPoint, line.sensor);
-      if (refLen <= lineLen) {
-        intersectingPoints[x] = true;
+      // calculate the distance from the ref point to the sensor
+      final refDist = euclideanDistance(refPoint, line.sensor);
+      if (refDist <= lineDist) {
+        print(x);
+        count++;
+        break;
       }
     }
   }
 
   // incorrect 1432197
   // incorrect 5147404
-  print(intersectingPoints.keys.length - 1); // subtract beacon on the line
-  for (final key in intersectingPoints.keys) {
-    print('Key: $key');
-  }
+  // too high  5147405
+  print('Answer: ${count - 1}'); // subtract beacon
 }
 
 int findXCoord(int y, double b, double m) {

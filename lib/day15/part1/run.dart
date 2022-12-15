@@ -41,27 +41,105 @@ Future<void> main() async {
   }
 
   // define the line at y=10
-  int y = 10;
-  int xBuffer = 10000;
-  Line refLine = Line(Point(-1 * xBuffer, y), Point(xBuffer, y));
+  int yRef = 10; // TODO change to test
+  // int yRef = 2000000; // TODO change to test
+  int xBuffer = 20000000;
+  int xStart = -1 * xBuffer;
+  int xEnd = xBuffer;
+  Line refLine = Line(Point(xStart, yRef), Point(xEnd, yRef));
 
+  // find lines that intersect the line
   List<Line> intersectingLines = [];
   for (final line in lines) {
     if (linesIntersect(line, refLine)) {
       intersectingLines.add(line);
     }
   }
-
-  print('Num of intersecting lines: ${intersectingLines.length}');
   for (final line in intersectingLines) {
     print(line);
   }
+
+  // alternate way to find intersecting lines since y is fixed
+  for (final line in lines) {
+    if (line.sensor.y <= yRef && line.beacon.y >= yRef ||
+        line.sensor.y >= yRef && line.beacon.y <= yRef) {
+      print('Intersecing line: $line');
+    }
+  }
+  print('Next step... finding intersecting points');
+
+  // find how many points intersect with other lines
+  Map<int, bool> intersectingPoints = {};
+  for (final line in lines) {
+    print('LINE: $line');
+
+    // // find the point where the line intersects the ref line
+    // int xCoord = 0;
+    // if (slopeIsUndefined(line.sensor, line.beacon)) {
+    //   print('Vertical line: $line');
+    //   xCoord = line.sensor.x; // pick either x, it is a vertical line
+    // } else {
+    //   double m = findSlope(line.sensor, line.beacon);
+    //   double b = solveForYIntercept(line.sensor.y, line.sensor.x, m);
+    //   xCoord = findXCoord(yRef, b, m);
+    // }
+
+    // print('X COORD: $xCoord');
+    // Point intersectionPoint = Point(xCoord, yRef);
+
+    // compute the distance of the sensor to line intersection point
+    int lineLen = euclideanDistance(line.sensor, line.beacon);
+    // print(
+    //     '**** LINE len: $lineLen, from ${line.sensor}, to $intersectionPoint');
+    for (int x = xStart; x < xEnd; x++) {
+      final refPoint = Point(x, yRef);
+      // compute the length from the ref point to the sensor
+      int refLen = euclideanDistance(refPoint, line.sensor);
+      if (refLen <= lineLen) {
+        intersectingPoints[x] = true;
+      }
+    }
+  }
+
+  // incorrect 1432197
+  // incorrect 5147404
+  print(intersectingPoints.keys.length - 1); // subtract beacon on the line
+  for (final key in intersectingPoints.keys) {
+    print('Key: $key');
+  }
+}
+
+int findXCoord(int y, double b, double m) {
+  print('Finding x coord: y: $y, b: $b, m: $m');
+  return ((y - b) / m).toInt();
+}
+
+double solveForYIntercept(int y, int x, double m) {
+  return y - (m * x);
+}
+
+bool slopeIsUndefined(Point one, Point two) {
+  return two.x - one.x == 0;
+}
+
+double findSlope(Point one, Point two) {
+  print('Finding slope of $one and $two');
+  print('\tfirst: ${two.y - one.y}');
+  print('\tsecond: ${two.x - one.x}');
+  return ((two.y - one.y) / (two.x - one.x));
+}
+
+int euclideanDistance(Point one, Point two) {
+  return sqrt(
+          (two.x - one.x) * (two.x - one.x) + (two.y - one.y) * (two.y - one.y))
+      .toInt();
 }
 
 bool linesIntersect(Line one, Line two) {
   return doIntersect(one.sensor, one.beacon, two.sensor, two.beacon);
 }
 
+// see: https://www.geeksforgeeks.org/check-if-two-given-line-segments-intersect/
 bool doIntersect(Point p1, Point q1, Point p2, Point q2) {
   // Find the four orientations needed for general and
   // special cases
@@ -99,6 +177,8 @@ int orientation(Point p, Point q, Point r) {
   return (val > 0) ? 1 : 2; // clock or counterclock wise
 }
 
+// Given three collinear points p, q, r, the function checks if
+// point q lies on line segment 'pr'
 bool onSegment(Point p, Point q, Point r) {
   if (q.x <= max(p.x, r.x) &&
       q.x >= min(p.x, r.x) &&

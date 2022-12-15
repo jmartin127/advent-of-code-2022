@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:aoc/day9/part2/run.dart';
+
 import '../../src/util.dart';
 
 class Point {
@@ -41,8 +43,8 @@ Future<void> main() async {
   }
 
   // define the line at y=10
-  int yRef = 10; // TODO change to test
-  // int yRef = 2000000; // TODO change to test
+  // int yRef = 10; // TODO change to test
+  int yRef = 2000000; // TODO change to test
   int xBuffer = 10000000;
   int xStart = -1 * xBuffer;
   int xEnd = xBuffer;
@@ -53,23 +55,26 @@ Future<void> main() async {
     final refPoint = Point(x, yRef);
     for (final line in lines) {
       // calculate the distance of the sensor from the beacon
-      final lineDist = euclideanDistance(line.sensor, line.beacon);
+      final lineDist = manhattanDistance(line.sensor, line.beacon);
 
       // calculate the distance from the ref point to the sensor
-      final refDist = euclideanDistance(refPoint, line.sensor);
+      final refDist = manhattanDistance(refPoint, line.sensor);
       if (refDist <= lineDist) {
-        print(x);
         count++;
         break;
       }
     }
   }
 
-  // incorrect 1432197
-  // incorrect 5147404
-  // too high  5147405
   print('Answer: ${count - 1}'); // subtract beacon
 }
+
+int manhattanDistance(Point one, Point two) {
+  return absolute(one.x, two.x) + absolute(one.y, two.y);
+}
+
+// My goodness, the issue I had was that I was using eucliden distance instead of manhattan distance
+// none of the below is needed, but may be helpful later
 
 int findXCoord(int y, double b, double m) {
   print('Finding x coord: y: $y, b: $b, m: $m');
@@ -91,6 +96,7 @@ double findSlope(Point one, Point two) {
   return ((two.y - one.y) / (two.x - one.x));
 }
 
+// WHY did I use the wrong distance formula?
 int euclideanDistance(Point one, Point two) {
   return sqrt(
           (two.x - one.x) * (two.x - one.x) + (two.y - one.y) * (two.y - one.y))

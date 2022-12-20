@@ -119,7 +119,7 @@ class Board {
     removeRock(rock);
 
     // then move the rock if we can
-    if (canShiftRock(rock, moveRight)) {
+    if (canShiftRockToSide(rock, moveRight)) {
       rock.xPos = rock.xPos + (moveRight ? 1 : -1);
     }
 
@@ -127,7 +127,23 @@ class Board {
     setRockInMotion(rock);
   }
 
-  bool canShiftRock(Rock rock, bool moveRight) {
+  bool moveDown(Rock rock) {
+    // first remove the shape so that it doesn't interfere for itself
+    removeRock(rock);
+
+    // then move the rock if we can
+    bool moved = false;
+    if (canShiftRockDown(rock)) {
+      rock.yPos = rock.yPos - 1;
+      moved = true;
+    }
+
+    // either way set it back to in motion
+    setRockInMotion(rock);
+    return moved;
+  }
+
+  bool canShiftRockToSide(Rock rock, bool moveRight) {
     for (int i = 0; i < rock.height(); i++) {
       for (int j = 0; j < rock.width(); j++) {
         // shift to the new coord
@@ -141,6 +157,24 @@ class Board {
         if (rock.shape[i][j]) {
           int xPos = newJ + rock.xPos;
           int yPos = i + rock.yPos;
+          if (!isValidAndOpenPosition(yPos, xPos)) {
+            return false;
+          }
+        }
+      }
+    }
+    return true;
+  }
+
+  bool canShiftRockDown(Rock rock) {
+    for (int i = 0; i < rock.height(); i++) {
+      for (int j = 0; j < rock.width(); j++) {
+        // shift to the new coord
+        int newI = i - 1;
+
+        if (rock.shape[i][j]) {
+          int xPos = j + rock.xPos;
+          int yPos = newI + rock.yPos;
           if (!isValidAndOpenPosition(yPos, xPos)) {
             return false;
           }
@@ -192,7 +226,10 @@ Future<void> main() async {
   Rock lastRock = dashRock;
   board.startNewRock(lastRock);
   board.printBoard();
-  board.moveToSide(lastRock, false);
-  board.moveToSide(lastRock, false);
+  board.moveToSide(lastRock, true);
+  board.moveDown(lastRock);
+  board.moveDown(lastRock);
+  board.moveDown(lastRock);
+  board.moveDown(lastRock);
   board.printBoard();
 }

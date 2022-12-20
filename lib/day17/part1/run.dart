@@ -2,14 +2,15 @@ import 'dart:io';
 
 import '../../src/util.dart';
 
-final int boardHeight = 100;
+final int boardHeight = 5000;
 
 class Rock {
+  String key;
   List<List<bool>> shape;
   int xPos = 0;
   int yPos = 0;
 
-  Rock(this.shape);
+  Rock(this.key, this.shape);
 
   int height() {
     return shape.length;
@@ -21,48 +22,53 @@ class Rock {
 
   Rock copy() {
     // the shape shouldn't change so use same list
-    final newRock = Rock(shape);
+    final newRock = Rock(key, shape);
     newRock.xPos = xPos;
     newRock.yPos = yPos;
     return newRock;
   }
+
+  @override
+  String toString() {
+    return 'Key: $key, x: $xPos, y: $yPos';
+  }
 }
 
-final dashRock = Rock([
+final dashRock = Rock('-', [
   [true, true, true, true]
 ]);
-final plusRock = Rock([
+final plusRock = Rock('+', [
   [false, true, false],
   [true, true, true],
   [false, true, false],
 ]);
-final lRock = Rock([
+final lRock = Rock('l', [
   [true, true, true],
   [false, false, true],
   [false, false, true],
 ]);
-final stickRock = Rock([
+final stickRock = Rock('|', [
   [true],
   [true],
   [true],
   [true],
 ]);
-final squareRock = Rock([
+final squareRock = Rock('[', [
   [true, true],
   [true, true],
 ]);
 
-Map<Rock, Rock> nextRock = {
-  dashRock: plusRock,
-  plusRock: lRock,
-  lRock: stickRock,
-  stickRock: squareRock,
-  squareRock: dashRock
+Map<String, Rock> nextRock = {
+  '-': plusRock,
+  '+': lRock,
+  'l': stickRock,
+  '|': squareRock,
+  '[': dashRock,
 };
 
 class Board {
   List<List<String>> values = [];
-  int highestRockInRoom = 0; // TODO ensure this is getting set
+  int highestRockInRoom = 0;
 
   Board();
 
@@ -103,11 +109,21 @@ class Board {
   void startNewRock(Rock rock) {
     rock.xPos = 2;
     rock.yPos = highestRockInRoom + 3;
+    print('Starting new rock at pos: ${rock.yPos}');
     setRockInMotion(rock);
   }
 
   void setRockInMotion(Rock rock) {
     setRockPostionsToValue(rock, '@');
+  }
+
+  void setRockStopped(Rock rock) {
+    setRockPostionsToValue(rock, '#');
+    int newHighest = rock.yPos + rock.height();
+    if (newHighest > highestRockInRoom) {
+      highestRockInRoom = newHighest;
+    }
+    print('setting highestRockInRoom to $highestRockInRoom');
   }
 
   void removeRock(Rock rock) {
@@ -220,16 +236,50 @@ Future<void> main() async {
   // initialize the board
   final board = Board();
   board.init(7, boardHeight);
-  board.printBoard();
+  // board.printBoard();
 
   // start dropping pieces
-  Rock lastRock = dashRock;
-  board.startNewRock(lastRock);
-  board.printBoard();
-  board.moveToSide(lastRock, true);
-  board.moveDown(lastRock);
-  board.moveDown(lastRock);
-  board.moveDown(lastRock);
-  board.moveDown(lastRock);
-  board.printBoard();
+  Rock currentRock = getNextRock('[');
+  board.startNewRock(currentRock);
+  int numStopped = 0;
+  int directionIndex = 0;
+  while (true) {
+    // If the end of the list is reached, it repeats.
+    if (directionIndex >= directionsIsRight.length) {
+      directionIndex = 0;
+    }
+    final directionIsRight = directionsIsRight[directionIndex];
+    directionIndex++;
+
+    // it alternates between being pushed by a jet of hot gas one unit (in the
+    // direction indicated by the next symbol in the jet pattern) and then
+    // falling one unit down.
+    board.moveToSide(currentRock, directionIsRight);
+    if (!board.moveDown(currentRock)) {
+      print('Setting rock stopped: $currentRock');
+      board.setRockStopped(currentRock);
+      numStopped++;
+      if (numStopped == 2022) {
+        break;
+      }
+
+      // get the next rock
+      currentRock = getNextRock(currentRock.key);
+      board.startNewRock(currentRock);
+      //board.printBoard();
+    }
+  }
+  print(board.highestRockInRoom);
+}
+
+/*
+  '-': '+',
+  '+': 'l',
+  'l': '|',
+  '|': '[',
+  '[': '-'
+*/
+Rock getNextRock(String currentRockKey) {
+  final next = nextRock[currentRockKey];
+  return next!.copy();
 }

@@ -76,6 +76,26 @@ class Board {
     }
   }
 
+  int height() {
+    return values.length;
+  }
+
+  int width() {
+    return values[0].length;
+  }
+
+  void setRockPostionsToValue(Rock rock, String val) {
+    for (int i = 0; i < rock.height(); i++) {
+      for (int j = 0; j < rock.width(); j++) {
+        if (rock.shape[i][j]) {
+          int xPos = j + rock.xPos;
+          int yPos = i + rock.yPos;
+          values[yPos][xPos] = val;
+        }
+      }
+    }
+  }
+
   // The tall, vertical chamber is exactly seven units wide. Each rock appears
   // so that its left edge is two units away from the left wall and its bottom
   // edge is three units above the highest rock in the room (or the floor, if
@@ -83,15 +103,61 @@ class Board {
   void startNewRock(Rock rock) {
     rock.xPos = 2;
     rock.yPos = highestRockInRoom + 3;
+    setRockInMotion(rock);
+  }
+
+  void setRockInMotion(Rock rock) {
+    setRockPostionsToValue(rock, '@');
+  }
+
+  void removeRock(Rock rock) {
+    setRockPostionsToValue(rock, '.');
+  }
+
+  void moveToSide(Rock rock, bool moveRight) {
+    // first remove the shape so that it doesn't interfere for itself
+    removeRock(rock);
+
+    // then move the rock if we can
+    if (canShiftRock(rock, moveRight)) {
+      rock.xPos = rock.xPos + (moveRight ? 1 : -1);
+    }
+
+    // either way set it back to in motion
+    setRockInMotion(rock);
+  }
+
+  bool canShiftRock(Rock rock, bool moveRight) {
     for (int i = 0; i < rock.height(); i++) {
       for (int j = 0; j < rock.width(); j++) {
+        // shift to the new coord
+        int newJ = j;
+        if (moveRight) {
+          newJ++;
+        } else {
+          newJ--;
+        }
+
         if (rock.shape[i][j]) {
-          int xPos = j + rock.xPos;
+          int xPos = newJ + rock.xPos;
           int yPos = i + rock.yPos;
-          values[yPos][xPos] = '@';
+          if (!isValidAndOpenPosition(yPos, xPos)) {
+            return false;
+          }
         }
       }
     }
+    return true;
+  }
+
+  bool isValidAndOpenPosition(int i, int j) {
+    if (i < 0 || i >= height()) {
+      return false;
+    }
+    if (j < 0 || j >= width()) {
+      return false;
+    }
+    return values[i][j] == '.';
   }
 
   void printBoard() {
@@ -124,6 +190,9 @@ Future<void> main() async {
 
   // start dropping pieces
   Rock lastRock = dashRock;
-  board.startNewRock(squareRock); // todo fix
+  board.startNewRock(lastRock);
+  board.printBoard();
+  board.moveToSide(lastRock, false);
+  board.moveToSide(lastRock, false);
   board.printBoard();
 }

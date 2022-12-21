@@ -3,7 +3,7 @@ import 'dart:io';
 
 import '../../src/util.dart';
 
-final int boardWindowHeight = 10000;
+final int boardWindowHeight = 5000;
 final int numPieces = 2022;
 
 class Rock {
@@ -71,6 +71,7 @@ Map<String, Rock> nextRock = {
 class Board {
   ListQueue<List<String>> values = ListQueue();
   int highestRockInRoom = 0;
+  int numLinesRemoved = 0;
 
   Board();
 
@@ -84,6 +85,11 @@ class Board {
     }
   }
 
+  // need to adjust y so it is in range of the acive sliding window
+  int adjustYPos(int y) {
+    return y - numLinesRemoved;
+  }
+
   int height() {
     return values.length;
   }
@@ -92,13 +98,29 @@ class Board {
     return values.first.length;
   }
 
+  void removeLinesFromBottomAddToTop(int numLines) {
+    for (int i = 0; i < numLines; i++) {
+      // remove the last row
+      values.removeLast();
+
+      // prefix with a new empty row
+      List<String> row = [];
+      for (int j = 0; j < width(); j++) {
+        row.add('.');
+      }
+      values.addFirst(row);
+    }
+    numLinesRemoved += numLines;
+  }
+
   void setRockPostionsToValue(Rock rock, String val) {
     for (int i = 0; i < rock.height(); i++) {
       for (int j = 0; j < rock.width(); j++) {
         if (rock.shape[i][j]) {
           int xPos = j + rock.xPos;
           int yPos = i + rock.yPos;
-          values.elementAt(yPos)[xPos] = val;
+          int yAdjusted = adjustYPos(yPos);
+          values.elementAt(yAdjusted)[xPos] = val;
         }
       }
     }
@@ -111,6 +133,7 @@ class Board {
   void startNewRock(Rock rock) {
     rock.xPos = 2;
     rock.yPos = highestRockInRoom + 3;
+    rock.yPos = adjustYPos(rock.yPos);
     print('Starting new rock at pos: ${rock.yPos}');
     setRockInMotion(rock);
   }
@@ -203,13 +226,15 @@ class Board {
   }
 
   bool isValidAndOpenPosition(int i, int j) {
-    if (i < 0 || i >= height()) {
+    // TODO was     if (i < 0 || i >= height()) {
+    if (i < 0) {
       return false;
     }
     if (j < 0 || j >= width()) {
       return false;
     }
-    return values.elementAt(i)[j] == '.';
+    int adjustedI = adjustYPos(i);
+    return values.elementAt(adjustedI)[j] == '.';
   }
 
   void printBoard() {
@@ -247,6 +272,7 @@ Future<void> main() async {
   board.startNewRock(currentRock);
   int numStopped = 0;
   int directionIndex = 0;
+  int oldHighest = 0;
   while (true) {
     // If the end of the list is reached, it repeats.
     if (directionIndex >= directionsIsRight.length) {
@@ -271,6 +297,18 @@ Future<void> main() async {
       currentRock = getNextRock(currentRock.key);
       board.startNewRock(currentRock);
       //board.printBoard();
+
+      // check if we should shift the view of the board
+
+      if (numStopped > 5000) {
+        if (oldHighest > 0) {
+          final numLinesAdded = board.highestRockInRoom - oldHighest;
+          if (numLinesAdded > 0) {
+            board.removeLinesFromBottomAddToTop(numLinesAdded);
+          }
+        }
+        oldHighest = board.highestRockInRoom;
+      }
     }
   }
   print(board.highestRockInRoom);

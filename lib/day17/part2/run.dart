@@ -1,10 +1,10 @@
-import 'dart:collection';
 import 'dart:io';
 
 import '../../src/util.dart';
 
-final int boardWindowHeight = 5000;
-final int numPieces = 2022;
+final int artibtrarySeqLen = 5000;
+final int boardHeight = 5000 * 2;
+final int totalBlocks = 1000000000000;
 
 class Rock {
   String key;
@@ -69,9 +69,8 @@ Map<String, Rock> nextRock = {
 };
 
 class Board {
-  ListQueue<List<String>> values = ListQueue();
+  List<List<String>> values = [];
   int highestRockInRoom = 0;
-  int numLinesRemoved = 0;
 
   Board();
 
@@ -85,32 +84,12 @@ class Board {
     }
   }
 
-  // need to adjust y so it is in range of the acive sliding window
-  int adjustYPos(int y) {
-    return y - numLinesRemoved;
-  }
-
   int height() {
     return values.length;
   }
 
   int width() {
-    return values.first.length;
-  }
-
-  void removeLinesFromBottomAddToTop(int numLines) {
-    for (int i = 0; i < numLines; i++) {
-      // remove the last row
-      values.removeLast();
-
-      // prefix with a new empty row
-      List<String> row = [];
-      for (int j = 0; j < width(); j++) {
-        row.add('.');
-      }
-      values.addFirst(row);
-    }
-    numLinesRemoved += numLines;
+    return values[0].length;
   }
 
   void setRockPostionsToValue(Rock rock, String val) {
@@ -119,8 +98,7 @@ class Board {
         if (rock.shape[i][j]) {
           int xPos = j + rock.xPos;
           int yPos = i + rock.yPos;
-          int yAdjusted = adjustYPos(yPos);
-          values.elementAt(yAdjusted)[xPos] = val;
+          values[yPos][xPos] = val;
         }
       }
     }
@@ -133,8 +111,7 @@ class Board {
   void startNewRock(Rock rock) {
     rock.xPos = 2;
     rock.yPos = highestRockInRoom + 3;
-    rock.yPos = adjustYPos(rock.yPos);
-    print('Starting new rock at pos: ${rock.yPos}');
+    // print('Starting new rock at pos: ${rock.yPos}');
     setRockInMotion(rock);
   }
 
@@ -148,7 +125,7 @@ class Board {
     if (newHighest > highestRockInRoom) {
       highestRockInRoom = newHighest;
     }
-    print('setting highestRockInRoom to $highestRockInRoom');
+    // print('setting highestRockInRoom to $highestRockInRoom');
   }
 
   void removeRock(Rock rock) {
@@ -226,20 +203,18 @@ class Board {
   }
 
   bool isValidAndOpenPosition(int i, int j) {
-    // TODO was     if (i < 0 || i >= height()) {
-    if (i < 0) {
+    if (i < 0 || i >= height()) {
       return false;
     }
     if (j < 0 || j >= width()) {
       return false;
     }
-    int adjustedI = adjustYPos(i);
-    return values.elementAt(adjustedI)[j] == '.';
+    return values[i][j] == '.';
   }
 
   void printBoard() {
-    for (int i = boardWindowHeight - 1; i >= 0; i--) {
-      final row = values.elementAt(i);
+    for (int i = boardHeight - 1; i >= 0; i--) {
+      final row = values[i];
       for (int j = 0; j < row.length; j++) {
         final val = row[j];
         stdout.write(val);
@@ -262,18 +237,16 @@ Future<void> main() async {
 
   // initialize the board
   final board = Board();
-  print('init');
-  board.init(7, boardWindowHeight);
-  print('init done');
-  // board.printBoard();
+  board.init(7, boardHeight);
 
   // start dropping pieces
+  // build up a pattern of height differences
   Rock currentRock = getNextRock('[');
   board.startNewRock(currentRock);
-  int numStopped = 0;
   int directionIndex = 0;
-  int oldHighest = 0;
-  while (true) {
+  int oldHeight = -1;
+  String seq = '';
+  while (seq.length < artibtrarySeqLen) {
     // If the end of the list is reached, it repeats.
     if (directionIndex >= directionsIsRight.length) {
       directionIndex = 0;
@@ -286,32 +259,70 @@ Future<void> main() async {
     // falling one unit down.
     board.moveToSide(currentRock, directionIsRight);
     if (!board.moveDown(currentRock)) {
-      print('Setting rock stopped: $currentRock');
       board.setRockStopped(currentRock);
-      numStopped++;
-      if (numStopped == numPieces) {
-        break;
+
+      if (oldHeight == -1) {
+        seq = '${board.highestRockInRoom}';
+      } else if (oldHeight > -1) {
+        final diff = board.highestRockInRoom - oldHeight;
+        seq += '$diff';
       }
+      oldHeight = board.highestRockInRoom;
 
       // get the next rock
       currentRock = getNextRock(currentRock.key);
       board.startNewRock(currentRock);
-      //board.printBoard();
-
-      // check if we should shift the view of the board
-
-      if (numStopped > 5000) {
-        if (oldHighest > 0) {
-          final numLinesAdded = board.highestRockInRoom - oldHighest;
-          if (numLinesAdded > 0) {
-            board.removeLinesFromBottomAddToTop(numLinesAdded);
-          }
-        }
-        oldHighest = board.highestRockInRoom;
-      }
     }
   }
-  print(board.highestRockInRoom);
+
+  // now find the pattern within the sequence
+  final patternStarts = findPatternStarts(seq);
+  final patternStart = patternStarts[0];
+  final cycleLength = patternStarts[1] - patternStarts[0];
+  final numCycles = numOfCycles(patternStart, cycleLength, totalBlocks);
+  int remainderCycles = totalBlocks - (numCycles * cycleLength) - patternStart;
+  final cycle = getCycle(seq, patternStart, cycleLength);
+
+  // copmute the final answer
+  final seqStartSum = sumOfSeq(seq.substring(0, patternStart));
+  final cycleSum = numCycles * sumOfSeq(cycle);
+  final seqEndSum = sumOfSeq(cycle.substring(0, remainderCycles));
+  print(seqStartSum + cycleSum + seqEndSum);
+}
+
+int sumOfSeq(String input) {
+  int total = 0;
+  for (final char in input.split('')) {
+    final val = int.parse(char);
+    total += val;
+  }
+  return total;
+}
+
+String getCycle(String seq, int patternStart, int cycleLength) {
+  return seq.substring(patternStart, patternStart + cycleLength);
+}
+
+int numOfCycles(int patternStart, int cycleLen, int totalLen) {
+  return ((totalLen - patternStart + 1) / cycleLen).toInt();
+}
+
+int remainderOfCycles(int patternStart, int cycleLen, int totalLen) {
+  return (totalLen - patternStart + 1) % cycleLen;
+}
+
+// finds the first 2 starts of the sequence to find the cycle
+List<int> findPatternStarts(String seq) {
+  int windowSize = 30;
+  for (int i = 0; i < seq.length - windowSize; i++) {
+    final window = seq.substring(i, i + windowSize);
+    final remainingString = seq.substring(i + windowSize);
+    if (remainingString.contains(window)) {
+      final nextPos = remainingString.indexOf(window);
+      return [i, i + nextPos + windowSize];
+    }
+  }
+  return [];
 }
 
 /*

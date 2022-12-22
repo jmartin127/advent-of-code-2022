@@ -20,7 +20,8 @@ class Cube {
   Cube(this.x, this.y, this.z);
 
   @override
-  bool operator ==(other) => other is Cube && x == x && y == y && z == z;
+  bool operator ==(other) =>
+      other is Cube && x == other.x && y == other.y && z == other.z;
 
   @override
   int get hashCode => hash3(x.hashCode, y.hashCode, z.hashCode);
@@ -160,13 +161,6 @@ Future<void> main() async {
   }
   print('Num of water cubes: ${waterCubes.length}');
 
-  // check for any solid turned to water
-  for (final cube in cubes) {
-    if (waterCubes.contains(cube)) {
-      throw Exception('Solid turned to water: $cube');
-    }
-  }
-
   // now we just have the top slice as water cubes, BUT we know anything that
   // touches these cubes that is NOT in the list of solid cubes, IS a water cube
   // so we just need to find all the water cubes within the range we care about
@@ -207,9 +201,6 @@ Future<void> main() async {
     answer += cube.numSidesTouched();
   }
   print('Answer: $answer');
-
-  // answer is too low: 1394
-  // answer is too low: 2472
 }
 
 Set<Cube> findNewWaterCubes(int minZ, int maxZ, int minY, int maxY, int minX,
@@ -229,9 +220,7 @@ Set<Cube> findNewWaterCubes(int minZ, int maxZ, int minY, int maxY, int minX,
         // check if it touches a water cube
         for (final waterCube in waterCubes) {
           if (currentCube.isTouching(waterCube)) {
-            if (!cubes.contains(currentCube)) {
-              newWaterCubes.add(currentCube);
-            }
+            newWaterCubes.add(currentCube);
           }
         }
       }

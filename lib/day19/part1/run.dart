@@ -2,6 +2,8 @@ import 'dart:math';
 
 import '../../src/util.dart';
 
+var random = new Random();
+
 enum Resource {
   ore,
   clay,
@@ -202,7 +204,7 @@ Future<void> main() async {
 
   print('Num of blueprints: ${blueprints.length}');
   Map<int, int> mostCommonAnswers = {};
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < 2; i++) {
     print('Iteration: $i');
     int answer = runAllBluePrints(blueprints);
     if (mostCommonAnswers.containsKey(answer)) {
@@ -210,6 +212,7 @@ Future<void> main() async {
     } else {
       mostCommonAnswers[answer] = 1;
     }
+    print(mostCommonAnswers);
   }
 
   print(mostCommonAnswers);
@@ -218,9 +221,9 @@ Future<void> main() async {
   Answers: 
     Too low:: 1535
     Too high: 1590, 1581
-    NOT correct: 1568, 1546
+    NOT correct: 1568, 1546, 1548, 1574
     So between: 1535 and 1581
-    I think it is: 1548, 1559, or 1565 
+    I think it is: 1559, or 1565
   */
   // {1535: 39, 1546: 14, 1547: 7, 1548: 5, 1526: 5, 1536: 4, 1514: 4, 1555: 3, 1544: 4, 1505: 1, 1539: 2, 1525: 1, 1560: 2, 1564: 1, 1553: 1, 1523: 1, 1554: 1, 1537: 3, 1549: 1, 1559: 1}
   // {1535: 33, 1546: 12, 1544: 8, 1559: 7, 1514: 1, 1547: 4, 1550: 1, 1526: 4, 1536: 5, 1527: 2, 1568: 1, 1548: 7, 1557: 1, 1555: 4, 1538: 1, 1537: 4, 1539: 1, 1553: 1, 1523: 1, 1505: 1, 1545: 1}
@@ -279,66 +282,60 @@ int runForBlueprint(Blueprint blueprint) {
 //
 /// Returns pending robots (if any)
 void spendResources(Blueprint blueprint, Resources resources, Robots robots) {
-  var rand = Random();
-
   // 1. Build a geode robot if possible (requires obsidian and ore)
-  while (true) {
-    if (resources.haveEnoughForRobot(Resource.geode, blueprint, null)) {
-      resources.spendResources(blueprint.robotsByType[Resource.geode]!.cost);
-      robots.addPendingRobot(Resource.geode, 1);
-    } else {
-      break;
-    }
-  }
-  if (resources.haveEnoughForRobot(Resource.geode, blueprint, Resource.ore)) {
-    return; // don't spend more ore till we can build a geode robot
-  }
-  if (closeToEnoughResources(
-          resources, robots, blueprint, Resource.geode, Resource.obsidian) &&
-      rand.nextBool()) {
-    // print('Going to stock up ore to build a geode robot');
+  // while (true) {
+  if (resources.haveEnoughForRobot(Resource.geode, blueprint, null) &&
+      randomlyReturnTrue(0.9)) {
+    resources.spendResources(blueprint.robotsByType[Resource.geode]!.cost);
+    robots.addPendingRobot(Resource.geode, 1);
     return;
   }
+  // }
+  // if (resources.haveEnoughForRobot(Resource.geode, blueprint, Resource.ore)) {
+  //   return; // don't spend more ore till we can build a geode robot
+  // }
+  // if (closeToEnoughResources(
+  //     resources, robots, blueprint, Resource.geode, Resource.obsidian)) {
+  //   // print('Going to stock up ore to build a geode robot');
+  //   return;
+  // }
 
-  // 2. Build an obsidian robot if possibe (requres clay and ore)
-  while (true) {
-    if (resources.haveEnoughForRobot(Resource.obsidian, blueprint, null)) {
-      resources.spendResources(blueprint.robotsByType[Resource.obsidian]!.cost);
-      robots.addPendingRobot(Resource.obsidian, 1);
-    } else {
-      break;
-    }
-  }
-  if (resources.haveEnoughForRobot(
-      Resource.obsidian, blueprint, Resource.ore)) {
-    return; // don't spend more ore till we can build an obsidian robot
-  }
-  if (closeToEnoughResources(
-      resources, robots, blueprint, Resource.obsidian, Resource.clay)) {
-    // print('Going to stock up ore to build an obsidian robot');
+  // 2. Build an obsidian robot if possible (requres clay and ore)
+  // while (true) {
+  if (resources.haveEnoughForRobot(Resource.obsidian, blueprint, null) &&
+      randomlyReturnTrue(0.9)) {
+    resources.spendResources(blueprint.robotsByType[Resource.obsidian]!.cost);
+    robots.addPendingRobot(Resource.obsidian, 1);
     return;
   }
+  // if (resources.haveEnoughForRobot(
+  //     Resource.obsidian, blueprint, Resource.ore)) {
+  //   return; // don't spend more ore till we can build an obsidian robot
+  // }
+  // if (closeToEnoughResources(
+  //     resources, robots, blueprint, Resource.obsidian, Resource.clay)) {
+  //   // print('Going to stock up ore to build an obsidian robot');
+  //   return;
+  // }
 
   // Decide if we should build a clay robot or an ore robot? Explore both paths?
   // How do you decide if you should build an ore robot or a clay robot?
   // 3. Build a clay robot if possible (requires ore)
-  while (true && rand.nextBool()) {
-    if (resources.haveEnoughForRobot(Resource.clay, blueprint, null)) {
-      resources.spendResources(blueprint.robotsByType[Resource.clay]!.cost);
-      robots.addPendingRobot(Resource.clay, 1);
-    } else {
-      break;
-    }
+  // while (true) {
+  if (resources.haveEnoughForRobot(Resource.clay, blueprint, null) &&
+      randomlyReturnTrue(0.5)) {
+    resources.spendResources(blueprint.robotsByType[Resource.clay]!.cost);
+    robots.addPendingRobot(Resource.clay, 1);
+    return;
   }
 
   // 4. Build an ore robot (requires ore)
-  while (true && rand.nextBool()) {
-    if (resources.haveEnoughForRobot(Resource.ore, blueprint, null)) {
-      resources.spendResources(blueprint.robotsByType[Resource.ore]!.cost);
-      robots.addPendingRobot(Resource.ore, 1);
-    } else {
-      break;
-    }
+  // while (true) {
+  if (resources.haveEnoughForRobot(Resource.ore, blueprint, null) &&
+      randomlyReturnTrue(0.5)) {
+    resources.spendResources(blueprint.robotsByType[Resource.ore]!.cost);
+    robots.addPendingRobot(Resource.ore, 1);
+    return;
   }
 }
 
@@ -373,9 +370,13 @@ bool closeToEnoughResources(Resources resources, Robots robots,
   // print('\tNum outstanding for ore: $numOutstandingCollectionsOfOre');
 
   if (numOutstandingCollectionsOfRequired <= 1 &&
-      numOutstandingCollectionsOfRequired <= 1) {
+      numOutstandingCollectionsOfOre <= 1) {
     return true;
   }
   return numOutstandingCollectionsOfOre >
-      numOutstandingCollectionsOfRequired - 1;
+      numOutstandingCollectionsOfRequired - 0;
+}
+
+bool randomlyReturnTrue(double fraction) {
+  return random.nextDouble() <= fraction;
 }

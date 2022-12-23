@@ -31,6 +31,82 @@ class Blueprint {
   }
 }
 
+class Resources {
+  Map<Resource, int> resources = {};
+
+  @override
+  String toString() {
+    return 'Resources: $resources';
+  }
+
+  bool hasResources() {
+    for (final entry in resources.entries) {
+      if (entry.value > 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void combineResources(Resources other) {
+    for (final entry in other.resources.entries) {
+      final resource = entry.key;
+      final num = entry.value;
+      addResources(resource, num);
+    }
+  }
+
+  void addResources(Resource type, int num) {
+    if (resources.containsKey(type)) {
+      resources[type] = resources[type]! + num;
+    } else {
+      resources[type] = num;
+    }
+  }
+}
+
+class Robots {
+  Map<Resource, int> numRobotsByType = {};
+  Map<Resource, int> pendingRobots = {};
+
+  Resources collectResources() {
+    final newResources = Resources();
+    for (final entry in numRobotsByType.entries) {
+      final robotType = entry.key;
+      final numRobots = entry.value;
+      newResources.addResources(robotType, numRobots);
+    }
+    return newResources;
+  }
+
+  void addPendingRobot(Resource type, int num) {
+    if (pendingRobots.containsKey(type)) {
+      pendingRobots[type] = pendingRobots[type]! + num;
+    } else {
+      pendingRobots[type] = num;
+    }
+  }
+
+  void addRobot(Resource type, int num) {
+    if (numRobotsByType.containsKey(type)) {
+      numRobotsByType[type] = numRobotsByType[type]! + num;
+    } else {
+      numRobotsByType[type] = num;
+    }
+  }
+
+  void convertPendingToActual() {
+    if (pendingRobots.isNotEmpty) {
+      for (final entry in pendingRobots.entries) {
+        final robotType = entry.key;
+        final robotCount = entry.value;
+        addRobot(robotType, robotCount);
+      }
+    }
+    pendingRobots = {};
+  }
+}
+
 Future<void> main() async {
   final lines = await Util.readFileAsStrings('input.txt');
 
@@ -66,12 +142,6 @@ Future<void> main() async {
   }
 
   print('Num of blueprints: ${blueprints.length}');
-  for (final blueprint in blueprints) {
-    print(blueprint);
-  }
-
-  // Fortunately, you have exactly one ore-collecting robot in your pack that
-  // you can use to kickstart the whole operation.
 
   // Each robot can collect 1 of its resource type per minute.
 
@@ -90,17 +160,33 @@ Future<void> main() async {
   // How do you decide if you should build an ore robot or a clay robot?
   // How do you know when you should "save up" enough ore to get a higher-level robot vs. spend it on an ore or clay robot?
   // ... If you have enough obsidian, for example, then seems you should not spend ore on other things
+  //
+  // Obervation, the only thing that really matters is to decide how to spend
+  // the resources
 
   for (final blueprint in blueprints) {
-    Map<Resource, int> resources = {};
-    Map<Resource, int> numRobotsByType = {};
+    print('Processing blueprint: ${blueprint.id}');
+    final resources = Resources();
+    final robots = Robots();
+
+    // Fortunately, you have exactly one ore-collecting robot in your pack that
+    // you can use to kickstart the whole operation.
+    robots.addRobot(Resource.ore, 1);
     for (int minute = 1; minute <= 24; minute++) {
+      print('\n== Minute $minute ==');
+
       // 1. spend resources
+      if (resources.hasResources()) {
+        throw Exception('Deal with resources');
+      }
 
       // 2. robots collect resources
+      final newResources = robots.collectResources();
+      resources.combineResources(newResources);
+      print('Now have: $resources');
 
       // 3. new robots are ready
-
+      robots.convertPendingToActual();
     }
   }
 }

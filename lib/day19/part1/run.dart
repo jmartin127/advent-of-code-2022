@@ -2,6 +2,8 @@ import 'dart:math';
 
 import '../../src/util.dart';
 
+final Map<int, int> maxForBlueprint = {};
+
 enum Resource {
   ore,
   clay,
@@ -202,20 +204,56 @@ Future<void> main() async {
 
   print('Num of blueprints: ${blueprints.length}');
 
-  int answer = 0;
+  for (int i = 0; i < 50; i++) {
+    print('Iteration: $i');
+    runAllBluePrints(blueprints);
+    int answer = 0;
+    for (final entry in maxForBlueprint.entries) {
+      answer += entry.value;
+    }
+    print('\tcurrent answer: $answer');
+  }
+
+  /*
+  Distribution of answers:
+  Answer: 1535, Count: 13 --> your answer is too low
+  Answer: 1564, Count: 1 (highest)
+  Answer: 1560, Count: 1
+  Answer: 1557, Count: 2
+  Answer: 1555, Count: 2
+  Answer: 1553, Count: 1
+  Answer: 1548, Count: 3
+  Answer: 1547, Count: 1
+  Answer: 1546, Count: 9
+  Answer: 1545, Count: 1
+  Answer: 1544, Count: 2
+  Answer: 1526, Count: 2
+  Answer: 1525, Count: 2
+  Answer: 1514, Count: 2
+  */
+}
+
+void runAllBluePrints(List<Blueprint> blueprints) {
   for (final blueprint in blueprints) {
-    print('Processing blueprint: ${blueprint.id}');
+    // print('Processing blueprint: ${blueprint.id}');
     int maxGeodes = 0;
     for (int i = 0; i < 10000; i++) {
       final geodeCount = runForBlueprint(blueprint);
       if (geodeCount > maxGeodes) {
         maxGeodes = geodeCount;
-        print('MAX: $maxGeodes');
+        // print('MAX: $maxGeodes');
       }
     }
-    answer += (blueprint.id * maxGeodes);
+    final qualityLevel = blueprint.id * maxGeodes;
+    if (maxForBlueprint.containsKey(blueprint.id)) {
+      final currentMax = maxForBlueprint[blueprint.id]!;
+      if (qualityLevel > currentMax) {
+        maxForBlueprint[blueprint.id] = qualityLevel;
+      }
+    } else {
+      maxForBlueprint[blueprint.id] = qualityLevel;
+    }
   }
-  print(answer);
 }
 
 int runForBlueprint(Blueprint blueprint) {

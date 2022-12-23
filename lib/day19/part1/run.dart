@@ -93,7 +93,14 @@ Future<void> main() async {
 
   for (final blueprint in blueprints) {
     Map<Resource, int> resources = {};
-    Map<Robot, int> numRobotsByType = {};
-    for (int minute = 1; minute <= 24; minute++) {}
+    Map<Resource, int> numRobotsByType = {};
+    for (int minute = 1; minute <= 24; minute++) {
+      // 1. spend resources
+
+      // 2. robots collect resources
+
+      // 3. new robots are ready
+
+    }
   }
 }

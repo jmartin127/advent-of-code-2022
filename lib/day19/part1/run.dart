@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import '../../src/util.dart';
 
 enum Resource {
@@ -37,6 +39,10 @@ class Resources {
   @override
   String toString() {
     return 'Resources: $resources';
+  }
+
+  int resultingGeodes() {
+    return currentResourceCount(Resource.geode);
   }
 
   int currentResourceCount(Resource type) {
@@ -196,47 +202,59 @@ Future<void> main() async {
 
   print('Num of blueprints: ${blueprints.length}');
 
+  int answer = 0;
   for (final blueprint in blueprints) {
     print('Processing blueprint: ${blueprint.id}');
-    final resources = Resources();
-    final robots = Robots();
-
-    // Fortunately, you have exactly one ore-collecting robot in your pack that
-    // you can use to kickstart the whole operation.
-    robots.addRobot(Resource.ore, 1);
-    for (int minute = 1; minute <= 24; minute++) {
-      print('\n== Minute $minute ==');
-
-      // 1. spend resources
-      if (resources.hasResources()) {
-        spendResources(blueprint, resources, robots);
-        print('Spent: ${robots.pendingRobots}');
+    int maxGeodes = 0;
+    for (int i = 0; i < 10000; i++) {
+      final geodeCount = runForBlueprint(blueprint);
+      if (geodeCount > maxGeodes) {
+        maxGeodes = geodeCount;
+        print('MAX: $maxGeodes');
       }
-
-      // 2. robots collect resources
-      // Each robot can collect 1 of its resource type per minute.
-      final newResources = robots.collectResources();
-      resources.combineResources(newResources);
-      print('Now have: $resources');
-
-      // 3. new robots are ready
-      // It also takes one minute for the robot factory to construct any type of
-      // robot, although it consumes the necessary resources available when construction begins
-      robots.convertPendingToActual();
-      print('Now have: $robots');
     }
+    answer += (blueprint.id * maxGeodes);
   }
+  print(answer);
+}
+
+int runForBlueprint(Blueprint blueprint) {
+  final resources = Resources();
+  final robots = Robots();
+
+  // Fortunately, you have exactly one ore-collecting robot in your pack that
+  // you can use to kickstart the whole operation.
+  robots.addRobot(Resource.ore, 1);
+  for (int minute = 1; minute <= 24; minute++) {
+    // print('\n== Minute $minute ==');
+
+    // 1. spend resources
+    if (resources.hasResources()) {
+      spendResources(blueprint, resources, robots);
+      // print('Spent: ${robots.pendingRobots}');
+    }
+
+    // 2. robots collect resources
+    // Each robot can collect 1 of its resource type per minute.
+    final newResources = robots.collectResources();
+    resources.combineResources(newResources);
+    // print('Now have: $resources');
+
+    // 3. new robots are ready
+    // It also takes one minute for the robot factory to construct any type of
+    // robot, although it consumes the necessary resources available when construction begins
+    robots.convertPendingToActual();
+    // print('Now have: $robots');
+  }
+  return resources.resultingGeodes();
 }
 
 // This is really the only thing that matters.
 //
-// Questions:
-// How do you decide if you should build an ore robot or a clay robot?
-// How do you know when you should "save up" enough ore to get a higher-level robot vs. spend it on an ore or clay robot?
-// ... If you have enough obsidian, for example, then seems you should not spend ore on other things
-//
 /// Returns pending robots (if any)
 void spendResources(Blueprint blueprint, Resources resources, Robots robots) {
+  var rand = Random();
+
   // 1. Build a geode robot if possible (requires obsidian and ore)
   while (true) {
     if (resources.haveEnoughForRobot(Resource.geode, blueprint, null)) {
@@ -250,8 +268,9 @@ void spendResources(Blueprint blueprint, Resources resources, Robots robots) {
     return; // don't spend more ore till we can build a geode robot
   }
   if (closeToEnoughResources(
-      resources, robots, blueprint, Resource.geode, Resource.obsidian)) {
-    print('Going to stock up ore to build a geode robot');
+          resources, robots, blueprint, Resource.geode, Resource.obsidian) &&
+      rand.nextBool()) {
+    // print('Going to stock up ore to build a geode robot');
     return;
   }
 
@@ -270,13 +289,14 @@ void spendResources(Blueprint blueprint, Resources resources, Robots robots) {
   }
   if (closeToEnoughResources(
       resources, robots, blueprint, Resource.obsidian, Resource.clay)) {
-    print('Going to stock up ore to build an obsidian robot');
+    // print('Going to stock up ore to build an obsidian robot');
     return;
   }
 
   // Decide if we should build a clay robot or an ore robot? Explore both paths?
+  // How do you decide if you should build an ore robot or a clay robot?
   // 3. Build a clay robot if possible (requires ore)
-  while (true) {
+  while (true && rand.nextBool()) {
     if (resources.haveEnoughForRobot(Resource.clay, blueprint, null)) {
       resources.spendResources(blueprint.robotsByType[Resource.clay]!.cost);
       robots.addPendingRobot(Resource.clay, 1);
@@ -286,7 +306,7 @@ void spendResources(Blueprint blueprint, Resources resources, Robots robots) {
   }
 
   // 4. Build an ore robot (requires ore)
-  while (true) {
+  while (true && rand.nextBool()) {
     if (resources.haveEnoughForRobot(Resource.ore, blueprint, null)) {
       resources.spendResources(blueprint.robotsByType[Resource.ore]!.cost);
       robots.addPendingRobot(Resource.ore, 1);
@@ -322,9 +342,9 @@ bool closeToEnoughResources(Resources resources, Robots robots,
   final numOutstandingCollectionsOfOre = numStillNeededOfOre / currentRateOfOre;
 
   // check which one has the more outstanding collections
-  print(
-      '\tNum outstanding for $desiredResource: $numOutstandingCollectionsOfRequired');
-  print('\tNum outstanding for ore: $numOutstandingCollectionsOfOre');
+  // print(
+  //     '\tNum outstanding for $desiredResource: $numOutstandingCollectionsOfRequired');
+  // print('\tNum outstanding for ore: $numOutstandingCollectionsOfOre');
 
   if (numOutstandingCollectionsOfRequired <= 1 &&
       numOutstandingCollectionsOfRequired <= 1) {

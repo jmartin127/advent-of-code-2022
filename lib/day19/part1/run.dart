@@ -2,8 +2,6 @@ import 'dart:math';
 
 import '../../src/util.dart';
 
-final Map<int, int> maxForBlueprint = {};
-
 enum Resource {
   ore,
   clay,
@@ -203,37 +201,33 @@ Future<void> main() async {
   }
 
   print('Num of blueprints: ${blueprints.length}');
-
-  for (int i = 0; i < 50; i++) {
+  Map<int, int> mostCommonAnswers = {};
+  for (int i = 0; i < 100; i++) {
     print('Iteration: $i');
-    runAllBluePrints(blueprints);
-    int answer = 0;
-    for (final entry in maxForBlueprint.entries) {
-      answer += entry.value;
+    int answer = runAllBluePrints(blueprints);
+    if (mostCommonAnswers.containsKey(answer)) {
+      mostCommonAnswers[answer] = mostCommonAnswers[answer]! + 1;
+    } else {
+      mostCommonAnswers[answer] = 1;
     }
-    print('\tcurrent answer: $answer');
   }
 
+  print(mostCommonAnswers);
+
   /*
-  Distribution of answers:
-  Answer: 1535, Count: 13 --> your answer is too low
-  Answer: 1564, Count: 1 (highest)
-  Answer: 1560, Count: 1
-  Answer: 1557, Count: 2
-  Answer: 1555, Count: 2
-  Answer: 1553, Count: 1
-  Answer: 1548, Count: 3
-  Answer: 1547, Count: 1
-  Answer: 1546, Count: 9
-  Answer: 1545, Count: 1
-  Answer: 1544, Count: 2
-  Answer: 1526, Count: 2
-  Answer: 1525, Count: 2
-  Answer: 1514, Count: 2
+  Answers: 
+    Too low:: 1535
+    Too high: 1590, 1581
+    NOT correct: 1568, 1546
+    So between: 1535 and 1581
+    I think it is: 1548, 1559, or 1565 
   */
+  // {1535: 39, 1546: 14, 1547: 7, 1548: 5, 1526: 5, 1536: 4, 1514: 4, 1555: 3, 1544: 4, 1505: 1, 1539: 2, 1525: 1, 1560: 2, 1564: 1, 1553: 1, 1523: 1, 1554: 1, 1537: 3, 1549: 1, 1559: 1}
+  // {1535: 33, 1546: 12, 1544: 8, 1559: 7, 1514: 1, 1547: 4, 1550: 1, 1526: 4, 1536: 5, 1527: 2, 1568: 1, 1548: 7, 1557: 1, 1555: 4, 1538: 1, 1537: 4, 1539: 1, 1553: 1, 1523: 1, 1505: 1, 1545: 1}
 }
 
-void runAllBluePrints(List<Blueprint> blueprints) {
+int runAllBluePrints(List<Blueprint> blueprints) {
+  int answer = 0;
   for (final blueprint in blueprints) {
     // print('Processing blueprint: ${blueprint.id}');
     int maxGeodes = 0;
@@ -245,15 +239,9 @@ void runAllBluePrints(List<Blueprint> blueprints) {
       }
     }
     final qualityLevel = blueprint.id * maxGeodes;
-    if (maxForBlueprint.containsKey(blueprint.id)) {
-      final currentMax = maxForBlueprint[blueprint.id]!;
-      if (qualityLevel > currentMax) {
-        maxForBlueprint[blueprint.id] = qualityLevel;
-      }
-    } else {
-      maxForBlueprint[blueprint.id] = qualityLevel;
-    }
+    answer += qualityLevel;
   }
+  return answer;
 }
 
 int runForBlueprint(Blueprint blueprint) {

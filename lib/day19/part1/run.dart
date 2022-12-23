@@ -39,6 +39,13 @@ class Resources {
     return 'Resources: $resources';
   }
 
+  int currentResourceCount(Resource type) {
+    if (!resources.containsKey(type)) {
+      return 0;
+    }
+    return resources[type]!;
+  }
+
   bool haveEnoughForRobot(
       Resource robotType, Blueprint blueprint, Resource? ignoreResourceType) {
     final robot = blueprint.robotsByType[robotType]!;
@@ -101,6 +108,13 @@ class Robots {
   @override
   String toString() {
     return 'Robots: $numRobotsByType';
+  }
+
+  int collectionRate(Resource type) {
+    if (!numRobotsByType.containsKey(type)) {
+      return 0;
+    }
+    return numRobotsByType[type]!;
   }
 
   Resources collectResources() {
@@ -235,6 +249,11 @@ void spendResources(Blueprint blueprint, Resources resources, Robots robots) {
   if (resources.haveEnoughForRobot(Resource.geode, blueprint, Resource.ore)) {
     return; // don't spend more ore till we can build a geode robot
   }
+  if (closeToEnoughResources(
+      resources, robots, blueprint, Resource.geode, Resource.obsidian)) {
+    print('Going to stock up ore to build a geode robot');
+    return;
+  }
 
   // 2. Build an obsidian robot if possibe (requres clay and ore)
   while (true) {
@@ -248,6 +267,11 @@ void spendResources(Blueprint blueprint, Resources resources, Robots robots) {
   if (resources.haveEnoughForRobot(
       Resource.obsidian, blueprint, Resource.ore)) {
     return; // don't spend more ore till we can build an obsidian robot
+  }
+  if (closeToEnoughResources(
+      resources, robots, blueprint, Resource.obsidian, Resource.clay)) {
+    print('Going to stock up ore to build an obsidian robot');
+    return;
   }
 
   // Decide if we should build a clay robot or an ore robot? Explore both paths?
@@ -270,4 +294,42 @@ void spendResources(Blueprint blueprint, Resources resources, Robots robots) {
       break;
     }
   }
+}
+
+/// For example, store up ore if we are getting close on the first resource
+///
+bool closeToEnoughResources(Resources resources, Robots robots,
+    Blueprint blueprint, Resource desiredResource, Resource requiredResource) {
+  // determine how close we are to the first resource, and current rate
+  final currentRateOfRequired = robots.collectionRate(requiredResource);
+  if (currentRateOfRequired == 0) {
+    return false; // we aren't collection the required resource, so not close
+  }
+  final numNeededOfRequired =
+      blueprint.robotsByType[desiredResource]!.cost[requiredResource]!;
+  final currentCountOfRequired =
+      resources.currentResourceCount(requiredResource);
+  final numStillNeededOfRequired = numNeededOfRequired - currentCountOfRequired;
+  final numOutstandingCollectionsOfRequired =
+      numStillNeededOfRequired / currentRateOfRequired;
+
+  // perform the same calculations for ore
+  final currentRateOfOre = robots.collectionRate(Resource.ore);
+  final numNeededOfOre =
+      blueprint.robotsByType[desiredResource]!.cost[Resource.ore]!;
+  final currentCountOfOre = resources.currentResourceCount(Resource.ore);
+  final numStillNeededOfOre = numNeededOfOre - currentCountOfOre;
+  final numOutstandingCollectionsOfOre = numStillNeededOfOre / currentRateOfOre;
+
+  // check which one has the more outstanding collections
+  print(
+      '\tNum outstanding for $desiredResource: $numOutstandingCollectionsOfRequired');
+  print('\tNum outstanding for ore: $numOutstandingCollectionsOfOre');
+
+  if (numOutstandingCollectionsOfRequired <= 1 &&
+      numOutstandingCollectionsOfRequired <= 1) {
+    return true;
+  }
+  return numOutstandingCollectionsOfOre >
+      numOutstandingCollectionsOfRequired - 1;
 }

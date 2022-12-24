@@ -32,37 +32,28 @@ Future<void> main() async {
   // It isn't real clear from the wording of the problem if these should be
   // treated independently or not.
   final numbers = LinkedList<Element>();
-  final numbersOriginal = LinkedList<Element>();
   Element? zeroElement;
   for (int i = 0; i < lines.length; i++) {
     final line = lines[i];
-    final val = int.parse(line);
+    var val = int.parse(line);
+    val *= 811589153;
     numbers.add(Element(val, i));
-    numbersOriginal.add(Element(val, i));
     if (val == 0) {
       zeroElement = numbers.last;
     }
   }
+  final numbersOriginal = copyLinkedList(numbers);
   // print('Length: ${numbers.length}');
   print('Zero was found $zeroElement at ${zeroElement!.originalIndex}');
 
   // The numbers should be moved in the order they originally appear in the
   // encrypted file. Numbers moving around during the mixing process do not
   // change the order in which the numbers are moved.
-  for (final currentNum in numbersOriginal) {
-    final index = findIndexOfElement(numbers, currentNum)!;
-    final foundNum = numbers.elementAt(index);
-
-    final adjustedIndex =
-        findNewIndexReworked(index, numbers.length, foundNum.value);
-
-    if (adjustedIndex == index) {
-      // nothing to do, same spot
-      continue;
-    }
-
-    numbers.remove(foundNum);
-    numbers.elementAt(adjustedIndex).insertBefore(foundNum);
+  LinkedList<Element> input = numbers;
+  for (int i = 0; i < 10; i++) {
+    input = runTheMix(input, numbersOriginal);
+    print('After ${i + 1} round of mixing:');
+    print(input);
   }
 
   // Then, the grove coordinates can be found by looking at the 1000th,
@@ -86,6 +77,33 @@ Future<void> main() async {
   // must be: 1591
 }
 
+LinkedList<Element> runTheMix(
+    LinkedList<Element> numbers, LinkedList<Element> numbersOriginal) {
+  for (final currentNum in numbersOriginal) {
+    final index = findIndexOfElement(numbers, currentNum)!;
+    final foundNum = numbers.elementAt(index);
+
+    final adjustedIndex = findNewIndex(index, numbers.length, foundNum.value);
+
+    if (adjustedIndex == index) {
+      // nothing to do, same spot
+      continue;
+    }
+
+    numbers.remove(foundNum);
+    numbers.elementAt(adjustedIndex).insertBefore(foundNum);
+  }
+  return numbers;
+}
+
+LinkedList<Element> copyLinkedList(LinkedList<Element> original) {
+  final copy = LinkedList<Element>();
+  for (final item in original) {
+    copy.add(Element(item.value, item.originalIndex));
+  }
+  return copy;
+}
+
 int? findIndexOfElement(LinkedList<Element> numbers, Element element) {
   int index = 0;
   for (final otherNum in numbers) {
@@ -95,14 +113,6 @@ int? findIndexOfElement(LinkedList<Element> numbers, Element element) {
     index++;
   }
   return null;
-}
-
-int findNewIndexReworked(int currentIndex, int listLength, int numToMove) {
-  int newIndex = myModFunction((currentIndex + numToMove), listLength - 1);
-  if (newIndex < 0) {
-    newIndex = listLength + newIndex - 1;
-  }
-  return newIndex;
 }
 
 /// Finds the new index of the given [numToMove], using the [currentIndex] and

@@ -53,8 +53,7 @@ Future<void> main() async {
     final index = findIndexOfElement(numbers, currentNum)!;
     final foundNum = numbers.elementAt(index);
 
-    final adjustedIndex =
-        findNewIndexReworked(index, numbers.length, foundNum.value);
+    final adjustedIndex = findNewIndex(index, numbers.length, foundNum.value);
 
     if (adjustedIndex == index) {
       // nothing to do, same spot
@@ -97,28 +96,10 @@ int? findIndexOfElement(LinkedList<Element> numbers, Element element) {
   return null;
 }
 
-int findNewIndexReworked(int currentIndex, int listLength, int numToMove) {
+int findNewIndex(int currentIndex, int listLength, int numToMove) {
   int newIndex = myModFunction((currentIndex + numToMove), listLength - 1);
   if (newIndex < 0) {
     newIndex = listLength + newIndex - 1;
-  }
-  return newIndex;
-}
-
-/// Finds the new index of the given [numToMove], using the [currentIndex] and
-/// [listLength]
-int findNewIndex(int currentIndex, int listLength, int numToMove) {
-  int wrapAdjustment = 1;
-  if ((numToMove > 0 && numToMove < listLength) ||
-      (numToMove < 0 && (numToMove * -1) < listLength)) {
-    wrapAdjustment = 0;
-  }
-  final newNumToMove = myModFunction(numToMove, (listLength - wrapAdjustment));
-
-  int newIndex = currentIndex + newNumToMove;
-  newIndex = myModFunction(newIndex, (listLength - wrapAdjustment));
-  if (newIndex < 0) {
-    return newIndex + (listLength - wrapAdjustment);
   }
   return newIndex;
 }

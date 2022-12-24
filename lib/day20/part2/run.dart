@@ -115,20 +115,10 @@ int? findIndexOfElement(LinkedList<Element> numbers, Element element) {
   return null;
 }
 
-/// Finds the new index of the given [numToMove], using the [currentIndex] and
-/// [listLength]
 int findNewIndex(int currentIndex, int listLength, int numToMove) {
-  int wrapAdjustment = 1;
-  if ((numToMove > 0 && numToMove < listLength) ||
-      (numToMove < 0 && (numToMove * -1) < listLength)) {
-    wrapAdjustment = 0;
-  }
-  final newNumToMove = myModFunction(numToMove, (listLength - wrapAdjustment));
-
-  int newIndex = currentIndex + newNumToMove;
-  newIndex = myModFunction(newIndex, (listLength - wrapAdjustment));
+  int newIndex = myModFunction((currentIndex + numToMove), listLength - 1);
   if (newIndex < 0) {
-    return newIndex + (listLength - wrapAdjustment);
+    newIndex = listLength + newIndex - 1;
   }
   return newIndex;
 }

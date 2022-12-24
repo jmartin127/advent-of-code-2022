@@ -44,6 +44,7 @@ Future<void> main() async {
     }
   }
   // print('Length: ${numbers.length}');
+  print('Zero was found $zeroElement');
 
   // The numbers should be moved in the order they originally appear in the
   // encrypted file. Numbers moving around during the mixing process do not
@@ -54,22 +55,26 @@ Future<void> main() async {
     if (count % 100 == 0) {
       print('Count: $count');
     }
-    // print('Moving $currentNum');
+    print('Moving $currentNum');
 
     final index = findIndexOfElement(numbers, currentNum)!;
     final foundNum = numbers.elementAt(index);
-    // print('\tFound at index: $index');
+    print('\tFound at index: $index');
 
     if (foundNum.value > 0) {
-      // determine where the inseration is going to happen
+      // determine where the insertion is going to happen
       final insertAfterIndex = index + foundNum.value;
-      final adjustedIndex = insertAfterIndex % numbersOriginal.length;
+      final adjustedIndex = insertAfterIndex % numbers.length;
       if (adjustedIndex == index) {
         // nothing to do, same spot
         continue;
       }
+      print('\t\tinsertAfterIndex: $insertAfterIndex');
+      print('\t\tlength: ${numbersOriginal.length}');
+      print('\t\tlength2: ${numbers.length}');
+      print('\t\tadjusted index: $adjustedIndex');
 
-      // if it is wanting to move to length-1, then move it to the beginning
+      // if it is wanting to move after length-1, then move it to the beginning
       if (adjustedIndex == numbers.length - 1) {
         numbers.remove(foundNum);
         numbers.addFirst(foundNum);
@@ -80,18 +85,23 @@ Future<void> main() async {
         priorElement.insertAfter(foundNum);
       }
     } else if (foundNum.value < 0) {
-      // determine where the inseration is going to happen
+      // determine where the insertion is going to happen
       final insertBeforeIndex = index + foundNum.value;
-      var adjustedIndex = insertBeforeIndex % numbersOriginal.length;
+      var adjustedIndex = insertBeforeIndex;
+      adjustedIndex = insertBeforeIndex % numbers.length;
       if (adjustedIndex < 0) {
-        adjustedIndex = numbersOriginal.length + adjustedIndex;
+        adjustedIndex = numbers.length + adjustedIndex;
       }
       if (adjustedIndex == index) {
         // nothing to do, same spot
         continue;
       }
+      print('\t\tinsertBeforeIndex: $insertBeforeIndex');
+      print('\t\tlength: ${numbersOriginal.length}');
+      print('\t\tlength2: ${numbers.length}');
+      print('\t\tadjusted index: $adjustedIndex');
 
-      // if it is wanting to move to 0, then move it to the end
+      // if it is wanting to move before 0, then move it to the end
       if (adjustedIndex == 0) {
         numbers.remove(foundNum);
         numbers.add(foundNum);
@@ -111,6 +121,7 @@ Future<void> main() async {
   // Then, the grove coordinates can be found by looking at the 1000th,
   // 2000th, and 3000th numbers after the value 0, wrapping around the list as
   // necessary.
+  print('Final length: ${numbers.length}');
   final zeroIndex = findIndexOfElement(numbers, zeroElement!)!;
   // print('Zero index: $zeroIndex');
   final oneThousandth = numbers.elementAt((zeroIndex + 1000) % numbers.length);

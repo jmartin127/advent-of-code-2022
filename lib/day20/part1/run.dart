@@ -44,22 +44,21 @@ Future<void> main() async {
     }
   }
   // print('Length: ${numbers.length}');
-  print('Zero was found $zeroElement');
+  print('Zero was found $zeroElement at ${zeroElement!.originalIndex}');
 
   // The numbers should be moved in the order they originally appear in the
   // encrypted file. Numbers moving around during the mixing process do not
   // change the order in which the numbers are moved.
-  int count = 0;
   for (final currentNum in numbersOriginal) {
-    count++;
-    if (count % 100 == 0) {
-      print('Count: $count');
-    }
     print('Moving $currentNum');
 
     final index = findIndexOfElement(numbers, currentNum)!;
     final foundNum = numbers.elementAt(index);
     print('\tFound at index: $index');
+    if (currentNum.value != foundNum.value ||
+        currentNum.originalIndex != foundNum.originalIndex) {
+      throw Exception('Did not actaully find it');
+    }
 
     if (foundNum.value > 0) {
       // determine where the insertion is going to happen
@@ -70,8 +69,6 @@ Future<void> main() async {
         continue;
       }
       print('\t\tinsertAfterIndex: $insertAfterIndex');
-      print('\t\tlength: ${numbersOriginal.length}');
-      print('\t\tlength2: ${numbers.length}');
       print('\t\tadjusted index: $adjustedIndex');
 
       // if it is wanting to move after length-1, then move it to the beginning
@@ -87,8 +84,7 @@ Future<void> main() async {
     } else if (foundNum.value < 0) {
       // determine where the insertion is going to happen
       final insertBeforeIndex = index + foundNum.value;
-      var adjustedIndex = insertBeforeIndex;
-      adjustedIndex = insertBeforeIndex % numbers.length;
+      var adjustedIndex = myModFunction(insertBeforeIndex, numbers.length);
       if (adjustedIndex < 0) {
         adjustedIndex = numbers.length + adjustedIndex;
       }
@@ -97,8 +93,6 @@ Future<void> main() async {
         continue;
       }
       print('\t\tinsertBeforeIndex: $insertBeforeIndex');
-      print('\t\tlength: ${numbersOriginal.length}');
-      print('\t\tlength2: ${numbers.length}');
       print('\t\tadjusted index: $adjustedIndex');
 
       // if it is wanting to move before 0, then move it to the end
@@ -122,16 +116,20 @@ Future<void> main() async {
   // 2000th, and 3000th numbers after the value 0, wrapping around the list as
   // necessary.
   print('Final length: ${numbers.length}');
-  final zeroIndex = findIndexOfElement(numbers, zeroElement!)!;
-  // print('Zero index: $zeroIndex');
+  final zeroIndex = findIndexOfElement(numbers, zeroElement)!;
+  print('Zero index: $zeroIndex');
   final oneThousandth = numbers.elementAt((zeroIndex + 1000) % numbers.length);
   final twoThousandth = numbers.elementAt((zeroIndex + 2000) % numbers.length);
   final threeThousandth =
       numbers.elementAt((zeroIndex + 3000) % numbers.length);
   final sum = oneThousandth.value + twoThousandth.value + threeThousandth.value;
+  print('oneThousandth: $oneThousandth');
+  print('twoThousandth: $twoThousandth');
+  print('threeThousandth: $threeThousandth');
   print('Sum: $sum');
 
   // too high: 13343
+  // incorrect: -11909
 }
 
 int? findIndexOfElement(LinkedList<Element> numbers, Element element) {
@@ -143,4 +141,12 @@ int? findIndexOfElement(LinkedList<Element> numbers, Element element) {
     index++;
   }
   return null;
+}
+
+int myModFunction(int a, int b) {
+  if (a > 0) {
+    return a % b;
+  }
+
+  return ((a * -1) % b) * -1;
 }

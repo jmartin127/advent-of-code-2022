@@ -55,22 +55,14 @@ Future<void> main() async {
     final index = findIndexOfElement(numbers, currentNum)!;
     final foundNum = numbers.elementAt(index);
     print('\tFound at index: $index');
-    if (currentNum.value != foundNum.value ||
-        currentNum.originalIndex != foundNum.originalIndex) {
-      throw Exception('Did not actaully find it');
+
+    final adjustedIndex = findNewIndex(index, numbers.length, foundNum.value);
+    if (adjustedIndex == index) {
+      // nothing to do, same spot
+      continue;
     }
 
     if (foundNum.value > 0) {
-      // determine where the insertion is going to happen
-      final insertAfterIndex = index + foundNum.value;
-      final adjustedIndex = insertAfterIndex % numbers.length;
-      if (adjustedIndex == index) {
-        // nothing to do, same spot
-        continue;
-      }
-      print('\t\tinsertAfterIndex: $insertAfterIndex');
-      print('\t\tadjusted index: $adjustedIndex');
-
       // if it is wanting to move after length-1, then move it to the beginning
       if (adjustedIndex == numbers.length - 1) {
         numbers.remove(foundNum);
@@ -82,19 +74,6 @@ Future<void> main() async {
         priorElement.insertAfter(foundNum);
       }
     } else if (foundNum.value < 0) {
-      // determine where the insertion is going to happen
-      final insertBeforeIndex = index + foundNum.value;
-      var adjustedIndex = myModFunction(insertBeforeIndex, numbers.length);
-      if (adjustedIndex < 0) {
-        adjustedIndex = numbers.length + adjustedIndex;
-      }
-      if (adjustedIndex == index) {
-        // nothing to do, same spot
-        continue;
-      }
-      print('\t\tinsertBeforeIndex: $insertBeforeIndex');
-      print('\t\tadjusted index: $adjustedIndex');
-
       // if it is wanting to move before 0, then move it to the end
       if (adjustedIndex == 0) {
         numbers.remove(foundNum);
@@ -109,7 +88,7 @@ Future<void> main() async {
       // nothing to do if the value is zero
     }
 
-    // print('Updated list: $numbers');
+    print('Updated list: $numbers');
   }
 
   // Then, the grove coordinates can be found by looking at the 1000th,
@@ -129,7 +108,7 @@ Future<void> main() async {
   print('Sum: $sum');
 
   // too high: 13343
-  // incorrect: -11909
+  // incorrect: -11909, -9415
 }
 
 int? findIndexOfElement(LinkedList<Element> numbers, Element element) {
@@ -141,6 +120,24 @@ int? findIndexOfElement(LinkedList<Element> numbers, Element element) {
     index++;
   }
   return null;
+}
+
+/// Finds the new index of the given [numToMove], using the [currentIndex] and
+/// [listLength]
+int findNewIndex(int currentIndex, int listLength, int numToMove) {
+  int wrapAdjustment = 1;
+  if ((numToMove > 0 && numToMove < listLength) ||
+      (numToMove < 0 && (numToMove * -1) < listLength)) {
+    wrapAdjustment = 0;
+  }
+  final newNumToMove = myModFunction(numToMove, (listLength - wrapAdjustment));
+
+  int newIndex = currentIndex + newNumToMove;
+  newIndex = myModFunction(newIndex, (listLength - wrapAdjustment));
+  if (newIndex < 0) {
+    return newIndex + listLength;
+  }
+  return newIndex;
 }
 
 int myModFunction(int a, int b) {

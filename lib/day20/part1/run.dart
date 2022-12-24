@@ -57,6 +57,8 @@ Future<void> main() async {
     print('\tFound at index: $index');
 
     final adjustedIndex = findNewIndex(index, numbers.length, foundNum.value);
+    print('\tAdjusted index: $adjustedIndex');
+
     if (adjustedIndex == index) {
       // nothing to do, same spot
       continue;

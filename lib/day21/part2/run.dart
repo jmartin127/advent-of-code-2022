@@ -10,7 +10,7 @@ enum Operator {
 class Node {
   String label;
   bool isResolved;
-  int? resolvedValue;
+  BigInt? resolvedValue;
   String? leftOperand;
   String? rightOperand;
   Operator? operator;
@@ -25,7 +25,12 @@ class Node {
 
   Node copy() {
     return Node(
-        label, resolvedValue, isResolved, leftOperand, rightOperand, operator);
+        label,
+        resolvedValue == null ? null : BigInt.parse(resolvedValue.toString()),
+        isResolved,
+        leftOperand,
+        rightOperand,
+        operator);
   }
 }
 
@@ -58,8 +63,9 @@ Future<void> main() async {
           Node(label, null, false, leftOperand, rightOperand, theOperator);
     } else {
       // this means it must be resolved already (e.g., dbpl: 5)
-      final resolvedValue = int.parse(lineParts[1]);
-      nodesByLabel[label] = Node(label, resolvedValue, true, null, null, null);
+      final resolvedValue = lineParts[1];
+      nodesByLabel[label] =
+          Node(label, BigInt.parse(resolvedValue), true, null, null, null);
     }
   }
 
@@ -68,13 +74,45 @@ Future<void> main() async {
   }
 
   // sanity check
-  final nodesCopy = copyMap(nodesByLabel);
-  final areEqual = numbersPriorToRootAreEqual(nodesCopy, 301);
+  var nodesCopy = copyMap(nodesByLabel);
+  var areEqual = numbersPriorToRootAreEqual(nodesCopy, BigInt.parse('1'));
   print(areEqual);
+
+  // trying to match
+  int numToMatch = 116154256834924;
+
+  int min = 3000000000000;
+  int max = 4000000000000;
+
+  // binary search to narrow in on the answer
+  // while (true) {
+  //   print('min: $min');
+  //   print('max: $max');
+  //   int numToTry = ((max + min) / 2).toInt();
+  //   nodesCopy = copyMap(nodesByLabel);
+  //   final currentVal =
+  //       numbersPriorToRootAreEqual(nodesCopy, BigInt.from(numToTry));
+  //   print(currentVal);
+  //   final currentValInt = currentVal.toInt();
+  //   if (currentValInt > numToMatch) {
+  //     min = numToTry;
+  //   } else {
+  //     max = numToTry;
+  //   }
+  // }
+
+  for (int i = 3678125408016 - 100; i < 3678125408016 + 1000; i++) {
+    nodesCopy = copyMap(nodesByLabel);
+    final currentVal = numbersPriorToRootAreEqual(nodesCopy, BigInt.from(i));
+    print('CURR: $currentVal');
+    if (currentVal.toInt() == 116154256834924) {
+      throw Exception('worked! for $i');
+    }
+  }
 }
 
-bool numbersPriorToRootAreEqual(
-    Map<String, Node> nodesByLabel, int numForHuman) {
+BigInt numbersPriorToRootAreEqual(
+    Map<String, Node> nodesByLabel, BigInt numForHuman) {
   final root = nodesByLabel['root']!;
   final humnNode = nodesByLabel['humn']!;
   humnNode.resolvedValue = numForHuman;
@@ -100,9 +138,9 @@ bool numbersPriorToRootAreEqual(
   final rootLeftNode = nodesByLabel[root.leftOperand!]!;
   final rootRightNode = nodesByLabel[root.rightOperand!]!;
 
-  print('Left: ${rootLeftNode.resolvedValue}');
-  print('Right: ${rootRightNode.resolvedValue}');
-  return rootLeftNode.resolvedValue == rootRightNode.resolvedValue;
+  // print('Left : ${rootLeftNode.resolvedValue}');
+  // print('Right: ${rootRightNode.resolvedValue}');
+  return rootLeftNode.resolvedValue!;
 }
 
 Map<String, Node> copyMap(Map<String, Node> nodesByLabel) {
@@ -123,7 +161,7 @@ int numResolved(Map<String, Node> nodesByLabel) {
   return count;
 }
 
-int performCalculation(int left, int right, Operator op) {
+BigInt performCalculation(BigInt left, BigInt right, Operator op) {
   if (op == Operator.addition) {
     return left + right;
   } else if (op == Operator.subtraction) {
@@ -131,7 +169,7 @@ int performCalculation(int left, int right, Operator op) {
   } else if (op == Operator.multiplication) {
     return left * right;
   } else if (op == Operator.division) {
-    return (left / right).toInt();
+    return BigInt.from(left / right);
   }
   throw Exception('not possible');
 }

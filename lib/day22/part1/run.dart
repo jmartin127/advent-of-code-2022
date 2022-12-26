@@ -32,6 +32,18 @@ class Point {
   int y;
 
   Point(this.x, this.y);
+
+  @override
+  String toString() {
+    return '$x, $y';
+  }
+}
+
+class VisitedPoint {
+  Point point;
+  FacingDirection facing;
+
+  VisitedPoint(this.point, this.facing);
 }
 
 class Board {
@@ -39,8 +51,14 @@ class Board {
   Point currentPostion = Point(0, 0);
   // Initially, you are facing to the right (from the perspective of how the map is drawn).
   FacingDirection facing = FacingDirection.right;
+  Map<String, VisitedPoint> visitedPointsByCoords = {};
 
   Board();
+
+  void recordCurrentPosition() {
+    visitedPointsByCoords['${currentPostion.x},${currentPostion.y}'] =
+        VisitedPoint(Point(currentPostion.x, currentPostion.y), facing);
+  }
 
   // The final password is the sum of 1000 times the row, 4 times the
   // column, and the facing.
@@ -70,8 +88,10 @@ class Board {
     if (instruction.isDirection) {
       if (instruction.direction == Direction.right) {
         turnRight();
-      } else {
+      } else if (instruction.direction == Direction.left) {
         turnLeft();
+      } else {
+        throw Exception('Bad directions');
       }
     } else {
       moveNTiles(instruction.numTilesToMove!);
@@ -118,11 +138,15 @@ class Board {
   // facing.
   void moveNTiles(int numTilesToMove) {
     for (int i = 0; i < numTilesToMove; i++) {
-      moveOneTile();
+      if (!moveOneTile()) {
+        // don't keep moving if we hit a wall
+        return;
+      }
     }
   }
 
-  void moveOneTile() {
+  // returns true if was able to move, false otherwise
+  bool moveOneTile() {
     // figure out where we would like to go
     int desiredX = currentPostion.x;
     int desiredY = currentPostion.y;
@@ -147,21 +171,32 @@ class Board {
     if (needToWrap(desiredX, desiredY)) {
       final newPosition = wrapAround();
       if (newPosition == null) {
-        return;
+        return false;
       }
       actualX = newPosition.x;
       actualY = newPosition.y;
     }
 
     // check if we hit a wall
-    final char = matrix[actualY][actualX];
-    if (char == '#') {
-      return;
+    if (matrix[actualY][actualX] == '#') {
+      return false;
     }
 
     // did not hit a wall
-    currentPostion.x = actualX;
-    currentPostion.y = actualY;
+    moveToPosition(actualX, actualY);
+    return true;
+  }
+
+  void moveToPosition(int newX, newY) {
+    if (isItEmpty(newX, newY)) {
+      throw Exception('Cannnot move to an empty position');
+    }
+    if (isWall(newX, newY)) {
+      throw Exception('Cannot move into a wall');
+    }
+    recordCurrentPosition();
+    currentPostion.x = newX;
+    currentPostion.y = newY;
   }
 
   // It is possible for the next tile (after wrapping around) to be a wall;
@@ -226,11 +261,12 @@ class Board {
 
   bool needToWrap(int desiredX, int desiredY) {
     return positionIsOffBoard(desiredX, desiredY) ||
-        isEmpty(desiredX, desiredY);
+        isItEmpty(desiredX, desiredY);
   }
 
-  bool isEmpty(int x, int y) {
-    return valueAtPostion(x, y) == '';
+  bool isItEmpty(int x, int y) {
+    final result = valueAtPostion(x, y).trim().isEmpty;
+    return result;
   }
 
   bool isWall(int x, int y) {
@@ -255,9 +291,37 @@ class Board {
   void printMatrix() {
     for (int i = 0; i < matrix.length; i++) {
       for (int j = 0; j < matrix[i].length; j++) {
-        stdout.write(matrix[i][j]);
+        final val = matrix[i][j];
+        stdout.write(val.isEmpty ? ' ' : val);
       }
       print('');
+    }
+  }
+
+  void printMatrixWithPath() {
+    for (int i = 0; i < matrix.length; i++) {
+      for (int j = 0; j < matrix[i].length; j++) {
+        String val = matrix[i][j];
+        final visitedKey = '$j,$i';
+        if (visitedPointsByCoords.containsKey(visitedKey)) {
+          val = convertFacingtoAscii(visitedPointsByCoords[visitedKey]!.facing);
+        }
+        stdout.write(val.isEmpty ? ' ' : val);
+      }
+      print('');
+    }
+  }
+
+  String convertFacingtoAscii(FacingDirection facing) {
+    switch (facing) {
+      case FacingDirection.left:
+        return '<';
+      case FacingDirection.right:
+        return '>';
+      case FacingDirection.up:
+        return '^';
+      case FacingDirection.down:
+        return 'v';
     }
   }
 
@@ -302,7 +366,7 @@ Future<void> main() async {
       List<String> row = [];
       for (int x = 0; x < maxX; x++) {
         if (x < chars.length) {
-          row.add(chars[x]);
+          row.add(chars[x].trim());
         } else {
           row.add('');
         }
@@ -314,13 +378,18 @@ Future<void> main() async {
   // find the starting tile
   board.initStartingPostion();
 
+  print('Starting at: ${board.currentPostion}');
+
   // walk the path
   for (final instruction in instructions) {
     board.followInstruction(instruction);
   }
+  board.recordCurrentPosition();
 
   // get the password
   print(board.password());
+
+  board.printMatrixWithPath();
 
   // too high: 111172
 }

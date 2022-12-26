@@ -48,6 +48,13 @@ class Point {
   }
 }
 
+class WrapResult {
+  Point newPoint;
+  FacingDirection newFacing;
+
+  WrapResult(this.newPoint, this.newFacing);
+}
+
 class VisitedPoint {
   Point point;
   FacingDirection facing;
@@ -188,20 +195,16 @@ class Board {
     // handle wrapping
     var actualX = desiredX;
     var actualY = desiredY;
+    FacingDirection? newFacing;
     if (needToWrap(desiredX, desiredY)) {
-      print('wrapping...');
-      final newPosition = wrapAround();
-      print('\tnew position: $newPosition');
-      final currentFace = getFaceForCoords(currentPostion.x, currentPostion.y);
-      print(
-          'Data for wrapping issue: ${currentPostion.x}, ${currentPostion.y}. Current Face: $currentFace, Facing: $facing');
+      final wrapResult = wrapAround();
+      final newPosition = wrapResult.newPoint;
+      newFacing = wrapResult.newFacing;
       if (positionIsOffBoard(newPosition.x, newPosition.y)) {
         throw Exception('Off the board: ${newPosition.x}, ${newPosition.y}');
       }
       actualX = newPosition.x;
       actualY = newPosition.y;
-    } else {
-      print('not wrapping');
     }
 
     // check if we hit a wall
@@ -209,7 +212,11 @@ class Board {
       return false;
     }
 
-    // did not hit a wall
+    // did not hit a wall, move
+    // wraping can now cause us to face a different direction
+    if (newFacing != null) {
+      facing = newFacing;
+    }
     moveToPosition(actualX, actualY);
     return true;
   }
@@ -231,53 +238,67 @@ class Board {
   // stops before you actually wrap to the other side of the board.
   //
   // Returns null if not able to actually wrap around due to a wall
-  Point wrapAround() {
+  WrapResult wrapAround() {
     final currentFace = getFaceForCoords(currentPostion.x, currentPostion.y);
     switch (currentFace) {
       case CubeFace.back:
         if (facing == FacingDirection.left) {
-          return Point(0, 149 - currentPostion.y);
+          return WrapResult(
+              Point(0, 149 - currentPostion.y), FacingDirection.right);
         } else if (facing == FacingDirection.up) {
-          return Point(0, currentPostion.x + 100);
+          return WrapResult(
+              Point(0, currentPostion.x + 100), FacingDirection.right);
         }
         throw Exception('problem with back wrap');
       case CubeFace.right:
         if (facing == FacingDirection.up) {
-          return Point(currentPostion.x - 100, 199);
+          return WrapResult(
+              Point(currentPostion.x - 100, 199), FacingDirection.up);
         } else if (facing == FacingDirection.right) {
-          return Point(99, 149 - currentPostion.y);
+          return WrapResult(
+              Point(99, 149 - currentPostion.y), FacingDirection.left);
         } else if (facing == FacingDirection.down) {
-          return Point(99, currentPostion.x - 50);
+          return WrapResult(
+              Point(99, currentPostion.x - 50), FacingDirection.left);
         }
         throw Exception('problem with right wrap');
       case CubeFace.bottom:
         if (facing == FacingDirection.left) {
-          return Point(currentPostion.y - 50, 100);
+          return WrapResult(
+              Point(currentPostion.y - 50, 100), FacingDirection.down);
         } else if (facing == FacingDirection.right) {
-          return Point(currentPostion.y + 50, 49);
+          return WrapResult(
+              Point(currentPostion.y + 50, 49), FacingDirection.up);
         }
         throw Exception('problem with bottom wrap');
       case CubeFace.left:
         if (facing == FacingDirection.left) {
-          return Point(50, 149 - currentPostion.y);
+          return WrapResult(
+              Point(50, 149 - currentPostion.y), FacingDirection.right);
         } else if (facing == FacingDirection.up) {
-          return Point(50, currentPostion.x + 50);
+          return WrapResult(
+              Point(50, currentPostion.x + 50), FacingDirection.right);
         }
         throw Exception('problem with left wrap');
       case CubeFace.front:
         if (facing == FacingDirection.right) {
-          return Point(149, 149 - currentPostion.y);
+          return WrapResult(
+              Point(149, 149 - currentPostion.y), FacingDirection.left);
         } else if (facing == FacingDirection.down) {
-          return Point(49, currentPostion.x + 100);
+          return WrapResult(
+              Point(49, currentPostion.x + 100), FacingDirection.left);
         }
         throw Exception('problem with front wrap');
       case CubeFace.top:
         if (facing == FacingDirection.left) {
-          return Point(currentPostion.y - 100, 0);
+          return WrapResult(
+              Point(currentPostion.y - 100, 0), FacingDirection.down);
         } else if (facing == FacingDirection.down) {
-          return Point(currentPostion.x + 100, 0);
+          return WrapResult(
+              Point(currentPostion.x + 100, 0), FacingDirection.down);
         } else if (facing == FacingDirection.right) {
-          return Point(currentPostion.y - 100, 149);
+          return WrapResult(
+              Point(currentPostion.y - 100, 149), FacingDirection.up);
         }
         throw Exception('problem with top wrap');
     }
@@ -401,7 +422,6 @@ Future<void> main() async {
 
   // find the starting tile
   board.initStartingPostion();
-
   print('Starting at: ${board.currentPostion}');
 
   // walk the path
@@ -410,12 +430,10 @@ Future<void> main() async {
   }
   board.recordCurrentPosition();
 
+  board.printMatrixWithPath();
+
   // get the password
   print(board.password());
-
-  // board.printMatrixWithPath();
-
-  // too low: 4524
 }
 
 // 10R5L5R10L4R5L5

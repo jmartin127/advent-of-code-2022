@@ -4,6 +4,13 @@ import 'package:quiver/core.dart';
 
 import '../../src/util.dart';
 
+enum Direction {
+  north,
+  east,
+  south,
+  west,
+}
+
 class Point {
   int x;
   int y;
@@ -21,6 +28,69 @@ class Grove {
   Set<Point> elves = {};
 
   Grove();
+
+  // The Elf looks in each of four directions in the following order and proposes
+  // moving one step in the first valid direction:
+  //
+  // If there is no Elf in the N, NE, or NW adjacent positions, the Elf proposes moving north one step.
+  // If there is no Elf in the S, SE, or SW adjacent positions, the Elf proposes moving south one step.
+  // If there is no Elf in the W, NW, or SW adjacent positions, the Elf proposes moving west one step.
+  // If there is no Elf in the E, NE, or SE adjacent positions, the Elf proposes moving east one step.
+  Point? proposeMove(Point elf, List<Direction> directionOrder) {
+    for (final direction in directionOrder) {
+      switch (direction) {
+        case Direction.north:
+          if (isOpen(elf.x - 1, elf.y - 1) &&
+              isOpen(elf.x, elf.y - 1) &&
+              isOpen(elf.x + 1, elf.y - 1)) {
+            return Point(elf.x, elf.y - 1); // move north
+          }
+          break;
+        case Direction.east:
+          if (isOpen(elf.x + 1, elf.y - 1) &&
+              isOpen(elf.x + 1, elf.y) &&
+              isOpen(elf.x + 1, elf.y + 1)) {
+            return Point(elf.x + 1, elf.y); // move east
+          }
+          break;
+        case Direction.south:
+          if (isOpen(elf.x - 1, elf.y + 1) &&
+              isOpen(elf.x, elf.y + 1) &&
+              isOpen(elf.x + 1, elf.y + 1)) {
+            return Point(elf.x, elf.y + 1); // move south
+          }
+          break;
+        case Direction.west:
+          if (isOpen(elf.x - 1, elf.y - 1) &&
+              isOpen(elf.x - 1, elf.y) &&
+              isOpen(elf.x - 1, elf.y + 1)) {
+            return Point(elf.x - 1, elf.y); // move west
+          }
+          break;
+      }
+    }
+    return null;
+  }
+
+  bool isOpen(int x, int y) {
+    return !elves.contains(Point(x, y));
+  }
+
+  // During the first half of each round, each Elf considers the eight positions
+  // adjacent to themself.
+  bool isAnyElfClose(Point elf) {
+    for (int i = elf.y - 1; i <= elf.y + 1; i++) {
+      for (int j = elf.x - 1; j <= elf.x + 1; j++) {
+        if (i == elf.y && j == elf.x) {
+          continue; // skip itself
+        }
+        if (elves.contains(Point(j, i))) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 
   void addElf(Point elf) {
     elves.add(elf);
@@ -75,6 +145,20 @@ class Grove {
       print('');
     }
   }
+
+  // To do this, count the number of empty ground tiles contained by the
+  //smallest rectangle that contains every Elf.
+  int countEmptyGroundtiles() {
+    int result = 0;
+    for (int i = minY(); i <= maxY(); i++) {
+      for (int j = minX(); j <= maxX(); j++) {
+        if (!elves.contains(Point(j, i))) {
+          result++;
+        }
+      }
+    }
+    return result;
+  }
 }
 
 Future<void> main() async {
@@ -91,5 +175,85 @@ Future<void> main() async {
       }
     }
   }
+  print('== Initial State ==');
   grove.printGrove();
+
+  List<Direction> directionOrder = [
+    Direction.north,
+    Direction.south,
+    Direction.west,
+    Direction.east,
+  ];
+
+  // To make sure they're on the right track, the Elves like to check after round
+  // 10 that they're making good progress toward covering enough ground.
+  Grove currentGrove = grove;
+  for (int i = 0; i < 10; i++) {
+    currentGrove = runRound(currentGrove, directionOrder);
+    print('== End of Round ${i + 1} ==');
+    currentGrove.printGrove();
+    print('');
+  }
+
+  // Simulate the Elves' process and find the smallest rectangle that contains
+  // the Elves after 10 rounds.
+  print(currentGrove.countEmptyGroundtiles());
+}
+
+Grove runRound(Grove grove, List<Direction> directionOrder) {
+  // 1st have of the round, make proposals
+  Map<Point, int> proposalCounts = {};
+  Map<Point, Point> proposalsByElf = {};
+  for (final elf in grove.elves) {
+    // If no other Elves are in one of those eight positions, the Elf does not
+    // do anything during this round.
+    if (!grove.isAnyElfClose(elf)) {
+      continue;
+    }
+
+    // Otherwise, the Elf looks in each of four directions in the following
+    // order and proposes moving one step in the first valid direction:
+    final proposal = grove.proposeMove(elf, directionOrder);
+    if (proposal != null) {
+      proposalsByElf[elf] = proposal;
+      if (proposalCounts.containsKey(proposal)) {
+        proposalCounts[proposal] = proposalCounts[proposal]! + 1;
+      } else {
+        proposalCounts[proposal] = 1;
+      }
+    }
+  }
+
+  // After each Elf has had a chance to propose a move, the second half of the
+  // round can begin. Simultaneously, each Elf moves to their proposed destination
+  // tile if they were the only Elf to propose moving to that position. If two or
+  // more Elves propose moving to the same position, none of those Elves move.
+  Grove newGrove = Grove();
+  for (final elf in grove.elves) {
+    final proposal = proposalsByElf[elf];
+    if (proposal == null) {
+      newGrove.addElf(elf);
+      continue;
+    }
+    final proposalCount = proposalCounts[proposal]!;
+    if (proposalCount == 1) {
+      newGrove.addElf(proposal);
+    } else {
+      newGrove.addElf(elf);
+    }
+  }
+
+  // Finally, at the end of the round, the first direction the Elves considered
+  // is moved to the end of the list of directions. For example, during the second
+  // round, the Elves would try proposing a move to the south first, then west,
+  // then east, then north. On the third round, the Elves would first consider
+  // west, then east, then north, then south.
+  moveFrontToBack(directionOrder);
+
+  return newGrove;
+}
+
+void moveFrontToBack(List<Direction> directionOrder) {
+  final front = directionOrder.removeAt(0);
+  directionOrder.add(front);
 }

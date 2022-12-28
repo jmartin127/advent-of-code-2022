@@ -30,6 +30,24 @@ class Blizzard {
 
   Blizzard(this.currentLocation, this.facing);
 
+  void moveToLocation(Point point) {
+    currentLocation.x = point.x;
+    currentLocation.y = point.y;
+  }
+
+  Point nextLocation() {
+    switch (facing) {
+      case Facing.left:
+        return Point(currentLocation.x - 1, currentLocation.y);
+      case Facing.right:
+        return Point(currentLocation.x + 1, currentLocation.y);
+      case Facing.up:
+        return Point(currentLocation.x, currentLocation.y - 1);
+      case Facing.down:
+        return Point(currentLocation.x, currentLocation.y + 1);
+    }
+  }
+
   static Blizzard parseBlizzard(int x, int y, String facingDir) {
     final loc = Point(x, y);
     Facing face;
@@ -115,6 +133,55 @@ class Basin {
     }
   }
 
+  // Due to conservation of blizzard energy, as a blizzard reaches the wall of
+  // the valley, a new blizzard forms on the opposite side of the valley moving
+  // in the same direction.
+  //
+  // Because blizzards are made of tiny snowflakes, they pass right through each
+  // other.
+  void moveBlizzards() {
+    Map<Point, List<Blizzard>> newPositions = {};
+    for (final entry in blizzardsByPosition.entries) {
+      for (final blizzard in entry.value) {
+        var newPosition = blizzard.nextLocation();
+        if (!isWithinBasin(newPosition)) {
+          // hit a wall, wrap
+          if (newPosition.x <= 0) {
+            newPosition.x = values[0].length - 2;
+          } else if (newPosition.x >= values[0].length - 1) {
+            newPosition.x = 1;
+          } else if (newPosition.y <= 0) {
+            newPosition.y = values.length - 2;
+          } else if (newPosition.y >= values.length - 1) {
+            newPosition.y = 1;
+          }
+        }
+        blizzard.moveToLocation(newPosition);
+
+        // update the map of blizzards
+        if (newPositions.containsKey(newPosition)) {
+          newPositions[newPosition]!.add(blizzard);
+        } else {
+          newPositions[newPosition] = [blizzard];
+        }
+      }
+    }
+    blizzardsByPosition = newPositions;
+  }
+
+  // Note: There is a wall surrounding the whole thing, so need to account for
+  //       that
+  bool isWithinBasin(Point point) {
+    if (point.x <= 0 || point.x >= values[0].length - 1) {
+      return false;
+    }
+    if (point.y <= 0 || point.y >= values.length - 1) {
+      return false;
+    }
+
+    return true;
+  }
+
   void printBasin() {
     for (int i = 0; i < values.length; i++) {
       for (int j = 0; j < values[0].length; j++) {
@@ -132,6 +199,7 @@ class Basin {
       }
       print('');
     }
+    print('');
   }
 }
 
@@ -140,6 +208,10 @@ Future<void> main() async {
 
   // initialize the basin
   final basin = Basin(input);
+  basin.printBasin();
+
+  // test moving blizzards
+  basin.moveBlizzards();
   basin.printBasin();
 
   // run for each minute

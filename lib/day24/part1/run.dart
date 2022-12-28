@@ -22,6 +22,11 @@ class Point {
 
   @override
   int get hashCode => hash2(x, y);
+
+  @override
+  String toString() {
+    return 'x: $x, y: $y';
+  }
 }
 
 class Blizzard {
@@ -89,6 +94,7 @@ class Basin {
   Map<Point, List<Blizzard>> blizzardsByPosition = {};
   late Point startPosition;
   late Point endPosition;
+  late Point expeditionPos;
 
   /*
     #.######
@@ -126,11 +132,17 @@ class Basin {
         startPosition = Point(x, 0);
       }
     }
-    for (int x = 0; x < values.length; x++) {
+    for (int x = 0; x < values[0].length; x++) {
       if (values[values.length - 1][x] == '.') {
-        startPosition = Point(x, values.length - 1);
+        endPosition = Point(x, values.length - 1);
       }
     }
+    expeditionPos = Point(startPosition.x, startPosition.y);
+  }
+
+  void moveExpedition(Point point) {
+    expeditionPos.x = point.x;
+    expeditionPos.y = point.y;
   }
 
   // Due to conservation of blizzard energy, as a blizzard reaches the wall of
@@ -182,6 +194,14 @@ class Basin {
     return true;
   }
 
+  bool isExpeditionAtEnd() {
+    return expeditionPos == endPosition;
+  }
+
+  bool isEndPosition(Point point) {
+    return point == endPosition;
+  }
+
   void printBasin() {
     for (int i = 0; i < values.length; i++) {
       for (int j = 0; j < values[0].length; j++) {
@@ -194,6 +214,9 @@ class Basin {
           } else if (blizzards.length == 1) {
             char = blizzards[0].facingAsString();
           }
+        }
+        if (expeditionPos == currentPoint) {
+          char = 'E';
         }
         stdout.write(char);
       }
@@ -209,12 +232,74 @@ Future<void> main() async {
   // initialize the basin
   final basin = Basin(input);
   basin.printBasin();
+  print('Start: ${basin.startPosition}');
+  print('End: ${basin.endPosition}');
 
-  // test moving blizzards
-  basin.moveBlizzards();
-  basin.printBasin();
+  // move until we reach the goal
+  for (int i = 0; i < 30; i++) {
+    basin.moveBlizzards();
 
-  // run for each minute
+    // figure out where to move the expedition
+    moveExpedition(basin);
+    print('Expedition is at ${basin.expeditionPos}');
+
+    // print the result
+    print('Minute ${i + 1}');
+    basin.printBasin();
+
+    // check if we made it
+    if (basin.isExpeditionAtEnd()) {
+      throw Exception('reached end');
+    }
+  }
 }
 
-void runOneMinute(Basin basin) {}
+void moveExpedition(Basin basin) {
+  // determine if we reach the end position first by going left, right, or down
+  final vertDist = abs(basin.expeditionPos.y, basin.endPosition.y);
+  final horizDist = abs(basin.expeditionPos.x, basin.endPosition.x);
+  print('Vert dist: $vertDist');
+  print('Hori dist: $horizDist');
+
+  Point? movingToPosition;
+
+  // move down (if can)
+  if (vertDist >= horizDist) {
+    print('Moving down');
+    final newPos = Point(basin.expeditionPos.x, basin.expeditionPos.y + 1);
+
+    if (basin.isEndPosition(newPos) ||
+        (!basin.blizzardsByPosition.containsKey(newPos) &&
+            basin.isWithinBasin(newPos))) {
+      // check for blizzards and going off of the board
+      movingToPosition = newPos;
+    }
+  }
+
+  // move right (if haven't already moved down, and can)
+  if (vertDist <= horizDist && movingToPosition == null) {
+    print('Moving right');
+    final newPos = Point(basin.expeditionPos.x + 1, basin.expeditionPos.y);
+
+    // check for blizzards and going off of the board
+    if (basin.isEndPosition(newPos) ||
+        (!basin.blizzardsByPosition.containsKey(newPos) &&
+            basin.isWithinBasin(newPos))) {
+      movingToPosition = newPos;
+    }
+  }
+
+  // TODO move left and up if can't move closer to the goal
+
+  if (movingToPosition != null) {
+    print('Moving expedition to $movingToPosition');
+    basin.moveExpedition(movingToPosition);
+  }
+}
+
+int abs(int a, int b) {
+  if (a > b) {
+    return a - b;
+  }
+  return b - a;
+}

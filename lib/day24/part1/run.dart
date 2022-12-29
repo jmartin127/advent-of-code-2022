@@ -287,16 +287,18 @@ Future<void> main() async {
   // initialize the basin
   final basin = Basin(input);
 
-  var minAnswer = 100000000;
-  for (int i = 0; i < 10000; i++) {
-    final result = runExpeditionOneTime(basin.copy());
-    if (result != -1) {
-      if (result < minAnswer) {
-        minAnswer = result;
-      }
-    }
-  }
-  print(minAnswer);
+  // var minAnswer = 100000000;
+  // for (int i = 0; i < 10; i++) {
+  final newBasin = basin.copy();
+  final result = runExpeditionOneTime(newBasin);
+  newBasin.printBasin();
+  //   if (result != -1) {
+  //     if (result < minAnswer) {
+  //       minAnswer = result;
+  //     }
+  //   }
+  // }
+  // print(minAnswer);
 }
 
 int runExpeditionOneTime(Basin basin) {
@@ -309,15 +311,17 @@ int runExpeditionOneTime(Basin basin) {
     // figure out where to move the expedition
     bool succeeded = moveExpedition(basin);
     if (!succeeded) {
-      return -1;
+      print('Expedition failed');
+      // return -1;
     }
 
     // print the result
-    // print('Minute $minute');
-    // basin.printBasin();
+    print('Minute $minute');
+    basin.printBasin();
 
     // check if we made it
     if (basin.isExpeditionAtEnd()) {
+      print('Expedition has ended');
       return minute;
     }
   }
@@ -330,31 +334,31 @@ bool moveExpedition(Basin basin) {
 
   Point? movingToPosition;
 
-  final defaultProbability = 0.6;
+  final defaultProbability = 0.5;
 
-  // move down (if can)
-  if (vertDist >= horizDist && randomlyReturnTrue(defaultProbability)) {
-    final newPos = Point(basin.expeditionPos.x, basin.expeditionPos.y + 1);
+  // move right (if haven't already moved down, and can)
+  if (movingToPosition == null) {
+    final newPos = Point(basin.expeditionPos.x + 1, basin.expeditionPos.y);
     if (shoudlMoveToNewPosition(basin, newPos)) {
-      // print('Moving down');
+      print('Moving right');
       movingToPosition = newPos;
     }
   }
 
-  // move right (if haven't already moved down, and can)
-  if (movingToPosition == null && randomlyReturnTrue(defaultProbability)) {
-    final newPos = Point(basin.expeditionPos.x + 1, basin.expeditionPos.y);
+  // move down (if can)
+  if (randomlyReturnTrue(0.9)) {
+    final newPos = Point(basin.expeditionPos.x, basin.expeditionPos.y + 1);
     if (shoudlMoveToNewPosition(basin, newPos)) {
-      // print('Moving right');
+      print('Moving down');
       movingToPosition = newPos;
     }
   }
 
   // move down (if we didn't move right)
-  if (movingToPosition == null && randomlyReturnTrue(defaultProbability)) {
+  if (movingToPosition == null && randomlyReturnTrue(0.99)) {
     final newPos = Point(basin.expeditionPos.x, basin.expeditionPos.y + 1);
     if (shoudlMoveToNewPosition(basin, newPos)) {
-      // print('Moving down');
+      print('Moving down');
       movingToPosition = newPos;
     }
   }
@@ -368,13 +372,13 @@ bool moveExpedition(Basin basin) {
     if (leftFirst) {
       final newPos = Point(basin.expeditionPos.x - 1, basin.expeditionPos.y);
       if (shoudlMoveToNewPosition(basin, newPos)) {
-        // print('Moving left');
+        print('Moving left');
         movingToPosition = newPos;
       }
     } else {
       final newPos = Point(basin.expeditionPos.x, basin.expeditionPos.y - 1);
       if (shoudlMoveToNewPosition(basin, newPos)) {
-        // print('Moving up');
+        print('Moving up');
         movingToPosition = newPos;
       }
     }
@@ -385,13 +389,13 @@ bool moveExpedition(Basin basin) {
     if (leftFirst) {
       final newPos = Point(basin.expeditionPos.x, basin.expeditionPos.y - 1);
       if (shoudlMoveToNewPosition(basin, newPos)) {
-        // print('Moving up');
+        print('Moving up');
         movingToPosition = newPos;
       }
     } else {
       final newPos = Point(basin.expeditionPos.x - 1, basin.expeditionPos.y);
       if (shoudlMoveToNewPosition(basin, newPos)) {
-        // print('Moving left');
+        print('Moving left');
         movingToPosition = newPos;
       }
     }

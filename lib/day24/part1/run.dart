@@ -241,25 +241,35 @@ Future<void> main() async {
   final basin = Basin(input);
   basin.printBasin();
 
+  final result = runExpeditionOneTime(basin);
+  print(result);
+}
+
+int runExpeditionOneTime(Basin basin) {
   // move until we reach the goal
-  for (int i = 0; i < 30; i++) {
+  int minute = 0;
+  while (true) {
+    minute++;
     basin.moveBlizzards();
 
     // figure out where to move the expedition
-    moveExpedition(basin);
+    bool succeeded = moveExpedition(basin);
+    if (!succeeded) {
+      return -1;
+    }
 
     // print the result
-    print('Minute ${i + 1}');
-    basin.printBasin();
+    // print('Minute $minute');
+    // basin.printBasin();
 
     // check if we made it
     if (basin.isExpeditionAtEnd()) {
-      throw Exception('reached end');
+      return minute;
     }
   }
 }
 
-void moveExpedition(Basin basin) {
+bool moveExpedition(Basin basin) {
   // determine if we reach the end position first by going left, right, or down
   final vertDist = abs(basin.expeditionPos.y, basin.endPosition.y);
   final horizDist = abs(basin.expeditionPos.x, basin.endPosition.x);
@@ -270,7 +280,7 @@ void moveExpedition(Basin basin) {
   if (vertDist >= horizDist) {
     final newPos = Point(basin.expeditionPos.x, basin.expeditionPos.y + 1);
     if (shoudlMoveToNewPosition(basin, newPos)) {
-      print('Moving down');
+      // print('Moving down');
       movingToPosition = newPos;
     }
   }
@@ -279,7 +289,7 @@ void moveExpedition(Basin basin) {
   if (movingToPosition == null) {
     final newPos = Point(basin.expeditionPos.x + 1, basin.expeditionPos.y);
     if (shoudlMoveToNewPosition(basin, newPos)) {
-      print('Moving right');
+      // print('Moving right');
       movingToPosition = newPos;
     }
   }
@@ -288,7 +298,7 @@ void moveExpedition(Basin basin) {
   if (movingToPosition == null) {
     final newPos = Point(basin.expeditionPos.x, basin.expeditionPos.y + 1);
     if (shoudlMoveToNewPosition(basin, newPos)) {
-      print('Moving down');
+      // print('Moving down');
       movingToPosition = newPos;
     }
   }
@@ -300,13 +310,13 @@ void moveExpedition(Basin basin) {
     if (leftFirst) {
       final newPos = Point(basin.expeditionPos.x - 1, basin.expeditionPos.y);
       if (shoudlMoveToNewPosition(basin, newPos)) {
-        print('Moving left');
+        // print('Moving left');
         movingToPosition = newPos;
       }
     } else {
       final newPos = Point(basin.expeditionPos.x, basin.expeditionPos.y - 1);
       if (shoudlMoveToNewPosition(basin, newPos)) {
-        print('Moving up');
+        // print('Moving up');
         movingToPosition = newPos;
       }
     }
@@ -317,13 +327,13 @@ void moveExpedition(Basin basin) {
     if (leftFirst) {
       final newPos = Point(basin.expeditionPos.x, basin.expeditionPos.y - 1);
       if (shoudlMoveToNewPosition(basin, newPos)) {
-        print('Moving up');
+        // print('Moving up');
         movingToPosition = newPos;
       }
     } else {
       final newPos = Point(basin.expeditionPos.x - 1, basin.expeditionPos.y);
       if (shoudlMoveToNewPosition(basin, newPos)) {
-        print('Moving left');
+        // print('Moving left');
         movingToPosition = newPos;
       }
     }
@@ -331,13 +341,14 @@ void moveExpedition(Basin basin) {
 
   // still in a blizzard and unable to move any direction we are dead
   if (movingToPosition == null && basin.isExpeditionInBlizzard()) {
-    throw Exception('The expedition failed');
+    return false;
   }
 
   if (movingToPosition != null) {
     // print('Moving expedition to $movingToPosition');
     basin.moveExpedition(movingToPosition);
   }
+  return true;
 }
 
 bool shoudlMoveToNewPosition(Basin basin, Point newPos) {

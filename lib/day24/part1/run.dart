@@ -20,6 +20,10 @@ class Point {
 
   Point(this.x, this.y);
 
+  Point copy() {
+    return Point(x, y);
+  }
+
   @override
   bool operator ==(other) => other is Point && x == other.x && y == other.y;
 
@@ -37,6 +41,10 @@ class Blizzard {
   Facing facing;
 
   Blizzard(this.currentLocation, this.facing);
+
+  Blizzard copy() {
+    return Blizzard(currentLocation.copy(), facing);
+  }
 
   void moveToLocation(Point point) {
     currentLocation.x = point.x;
@@ -143,6 +151,46 @@ class Basin {
     expeditionPos = Point(startPosition.x, startPosition.y);
   }
 
+  Basin.empty();
+
+  Basin copy() {
+    final newBasin = Basin.empty();
+    newBasin.values = copyValues();
+    newBasin.blizzardsByPosition = copyBlizzardsByPos();
+    newBasin.startPosition = startPosition.copy();
+    newBasin.endPosition = endPosition.copy();
+    newBasin.expeditionPos = expeditionPos.copy();
+    return newBasin;
+  }
+
+  List<List<String>> copyValues() {
+    List<List<String>> newValues = [];
+    for (final row in values) {
+      List<String> newRow = [];
+      for (final val in row) {
+        newRow.add(val);
+      }
+      newValues.add(newRow);
+    }
+    return newValues;
+  }
+
+  Map<Point, List<Blizzard>> copyBlizzardsByPos() {
+    Map<Point, List<Blizzard>> result = {};
+    for (final entry in blizzardsByPosition.entries) {
+      result[entry.key.copy()] = copyBlizzards(entry.value);
+    }
+    return result;
+  }
+
+  List<Blizzard> copyBlizzards(List<Blizzard> other) {
+    List<Blizzard> result = [];
+    for (final blizzard in other) {
+      result.add(blizzard.copy());
+    }
+    return result;
+  }
+
   bool isExpeditionInBlizzard() {
     return blizzardsByPosition.containsKey(expeditionPos) &&
         blizzardsByPosition[expeditionPos]!.isNotEmpty;
@@ -236,13 +284,12 @@ class Basin {
 
 Future<void> main() async {
   final input = await Util.readFileAsStrings('input.txt');
+  // initialize the basin
+  final basin = Basin(input);
 
   var minAnswer = 100000000;
-  for (int i = 0; i < 1000; i++) {
-    // initialize the basin
-    final basin = Basin(input);
-
-    final result = runExpeditionOneTime(basin);
+  for (int i = 0; i < 10000; i++) {
+    final result = runExpeditionOneTime(basin.copy());
     if (result != -1) {
       if (result < minAnswer) {
         minAnswer = result;
@@ -283,8 +330,10 @@ bool moveExpedition(Basin basin) {
 
   Point? movingToPosition;
 
+  final defaultProbability = 0.6;
+
   // move down (if can)
-  if (vertDist >= horizDist) {
+  if (vertDist >= horizDist && randomlyReturnTrue(defaultProbability)) {
     final newPos = Point(basin.expeditionPos.x, basin.expeditionPos.y + 1);
     if (shoudlMoveToNewPosition(basin, newPos)) {
       // print('Moving down');
@@ -293,7 +342,7 @@ bool moveExpedition(Basin basin) {
   }
 
   // move right (if haven't already moved down, and can)
-  if (movingToPosition == null) {
+  if (movingToPosition == null && randomlyReturnTrue(defaultProbability)) {
     final newPos = Point(basin.expeditionPos.x + 1, basin.expeditionPos.y);
     if (shoudlMoveToNewPosition(basin, newPos)) {
       // print('Moving right');
@@ -302,7 +351,7 @@ bool moveExpedition(Basin basin) {
   }
 
   // move down (if we didn't move right)
-  if (movingToPosition == null) {
+  if (movingToPosition == null && randomlyReturnTrue(defaultProbability)) {
     final newPos = Point(basin.expeditionPos.x, basin.expeditionPos.y + 1);
     if (shoudlMoveToNewPosition(basin, newPos)) {
       // print('Moving down');
@@ -313,7 +362,9 @@ bool moveExpedition(Basin basin) {
   // if we are not moving, but a blizzard is about to enter our position, then
   // we need to move to avoid the blizzard
   bool leftFirst = random.nextBool();
-  if (movingToPosition == null && basin.isExpeditionInBlizzard()) {
+  if (movingToPosition == null &&
+      basin.isExpeditionInBlizzard() &&
+      randomlyReturnTrue(0.95)) {
     if (leftFirst) {
       final newPos = Point(basin.expeditionPos.x - 1, basin.expeditionPos.y);
       if (shoudlMoveToNewPosition(basin, newPos)) {
@@ -374,4 +425,8 @@ int abs(int a, int b) {
     return a - b;
   }
   return b - a;
+}
+
+bool randomlyReturnTrue(double fraction) {
+  return random.nextDouble() <= fraction;
 }

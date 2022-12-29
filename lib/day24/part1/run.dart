@@ -1,8 +1,11 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:quiver/core.dart';
 
 import '../../src/util.dart';
+
+var random = Random();
 
 enum Facing {
   left,
@@ -140,6 +143,11 @@ class Basin {
     expeditionPos = Point(startPosition.x, startPosition.y);
   }
 
+  bool isExpeditionInBlizzard() {
+    return blizzardsByPosition.containsKey(expeditionPos) &&
+        blizzardsByPosition[expeditionPos]!.isNotEmpty;
+  }
+
   void moveExpedition(Point point) {
     expeditionPos.x = point.x;
     expeditionPos.y = point.y;
@@ -232,8 +240,6 @@ Future<void> main() async {
   // initialize the basin
   final basin = Basin(input);
   basin.printBasin();
-  print('Start: ${basin.startPosition}');
-  print('End: ${basin.endPosition}');
 
   // move until we reach the goal
   for (int i = 0; i < 30; i++) {
@@ -241,7 +247,6 @@ Future<void> main() async {
 
     // figure out where to move the expedition
     moveExpedition(basin);
-    print('Expedition is at ${basin.expeditionPos}');
 
     // print the result
     print('Minute ${i + 1}');
@@ -258,43 +263,92 @@ void moveExpedition(Basin basin) {
   // determine if we reach the end position first by going left, right, or down
   final vertDist = abs(basin.expeditionPos.y, basin.endPosition.y);
   final horizDist = abs(basin.expeditionPos.x, basin.endPosition.x);
-  print('Vert dist: $vertDist');
-  print('Hori dist: $horizDist');
 
   Point? movingToPosition;
 
   // move down (if can)
   if (vertDist >= horizDist) {
-    print('Moving down');
     final newPos = Point(basin.expeditionPos.x, basin.expeditionPos.y + 1);
-
-    if (basin.isEndPosition(newPos) ||
-        (!basin.blizzardsByPosition.containsKey(newPos) &&
-            basin.isWithinBasin(newPos))) {
-      // check for blizzards and going off of the board
+    if (shoudlMoveToNewPosition(basin, newPos)) {
+      print('Moving down');
       movingToPosition = newPos;
     }
   }
 
   // move right (if haven't already moved down, and can)
   if (vertDist <= horizDist && movingToPosition == null) {
-    print('Moving right');
     final newPos = Point(basin.expeditionPos.x + 1, basin.expeditionPos.y);
-
-    // check for blizzards and going off of the board
-    if (basin.isEndPosition(newPos) ||
-        (!basin.blizzardsByPosition.containsKey(newPos) &&
-            basin.isWithinBasin(newPos))) {
+    if (shoudlMoveToNewPosition(basin, newPos)) {
+      print('Moving right');
       movingToPosition = newPos;
     }
   }
 
-  // TODO move left and up if can't move closer to the goal
+  // move down (if we didn't move right)
+  if (movingToPosition == null) {
+    final newPos = Point(basin.expeditionPos.x, basin.expeditionPos.y + 1);
+    if (shoudlMoveToNewPosition(basin, newPos)) {
+      print('Moving down');
+      movingToPosition = newPos;
+    }
+  }
+
+  // if we are not moving, but a blizzard is about to enter our position, then
+  // we need to move to avoid the blizzard
+  bool leftFirst = random.nextBool();
+  if (movingToPosition == null && basin.isExpeditionInBlizzard()) {
+    if (leftFirst) {
+      final newPos = Point(basin.expeditionPos.x - 1, basin.expeditionPos.y);
+      if (shoudlMoveToNewPosition(basin, newPos)) {
+        print('Moving left');
+        movingToPosition = newPos;
+      }
+    } else {
+      final newPos = Point(basin.expeditionPos.x, basin.expeditionPos.y - 1);
+      if (shoudlMoveToNewPosition(basin, newPos)) {
+        print('Moving up');
+        movingToPosition = newPos;
+      }
+    }
+  }
+
+  // if we are still in a blizzard and haven't found a place to go, try other of up and left
+  if (movingToPosition == null && basin.isExpeditionInBlizzard()) {
+    if (leftFirst) {
+      final newPos = Point(basin.expeditionPos.x, basin.expeditionPos.y - 1);
+      if (shoudlMoveToNewPosition(basin, newPos)) {
+        print('Moving up');
+        movingToPosition = newPos;
+      }
+    } else {
+      final newPos = Point(basin.expeditionPos.x - 1, basin.expeditionPos.y);
+      if (shoudlMoveToNewPosition(basin, newPos)) {
+        print('Moving left');
+        movingToPosition = newPos;
+      }
+    }
+  }
+
+  // still in a blizzard and unable to move any direction we are dead
+  if (movingToPosition == null && basin.isExpeditionInBlizzard()) {
+    throw Exception('The expedition failed');
+  }
 
   if (movingToPosition != null) {
-    print('Moving expedition to $movingToPosition');
+    // print('Moving expedition to $movingToPosition');
     basin.moveExpedition(movingToPosition);
   }
+}
+
+bool shoudlMoveToNewPosition(Basin basin, Point newPos) {
+  // reached the end, stop
+  if (basin.isEndPosition(newPos)) {
+    return true;
+  }
+
+  // no blizzard and still in basin
+  return (!basin.blizzardsByPosition.containsKey(newPos) &&
+      basin.isWithinBasin(newPos));
 }
 
 int abs(int a, int b) {

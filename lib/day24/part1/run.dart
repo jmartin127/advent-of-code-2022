@@ -276,7 +276,7 @@ void moveExpedition(Basin basin) {
   }
 
   // move right (if haven't already moved down, and can)
-  if (vertDist <= horizDist && movingToPosition == null) {
+  if (movingToPosition == null) {
     final newPos = Point(basin.expeditionPos.x + 1, basin.expeditionPos.y);
     if (shoudlMoveToNewPosition(basin, newPos)) {
       print('Moving right');

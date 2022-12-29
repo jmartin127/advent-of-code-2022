@@ -287,46 +287,19 @@ class Basin {
 
 Future<void> main() async {
   final input = await Util.readFileAsStrings('input.txt');
+
   // initialize the basin
   final basin = Basin(input);
 
-  // var minAnswer = 100000000;
-  // for (int i = 0; i < 10; i++) {
-  final newBasin = basin.copy();
-  final result = runExpeditionOneTime(newBasin);
-  newBasin.printBasin();
-  //   if (result != -1) {
-  //     if (result < minAnswer) {
-  //       minAnswer = result;
-  //     }
-  //   }
-  // }
-  // print(minAnswer);
-}
-
-int runExpeditionOneTime(Basin basin) {
-  // move until we reach the goal
+  // store a mapping of the blizzards at every point in time, up to an arbitrary
+  // number of minutes, since that is independent of the expedition
+  Map<int, Map<Point, List<Blizzard>>> blizzardsByMinute = {};
   int minute = 0;
-  while (true) {
+  blizzardsByMinute[minute] = basin.copyBlizzardsByPos();
+  for (int i = 0; i < 10; i++) {
     minute++;
     basin.moveBlizzards();
-
-    // figure out where to move the expedition
-    bool succeeded = moveExpedition(basin);
-    if (!succeeded) {
-      print('Expedition failed');
-      // return -1;
-    }
-
-    // print the result
-    print('Minute $minute');
-    basin.printBasin();
-
-    // check if we made it
-    if (basin.isExpeditionAtEnd()) {
-      print('Expedition has ended at minute $minute');
-      return minute;
-    }
+    blizzardsByMinute[minute] = basin.copyBlizzardsByPos();
   }
 }
 

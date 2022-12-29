@@ -237,12 +237,19 @@ class Basin {
 Future<void> main() async {
   final input = await Util.readFileAsStrings('input.txt');
 
-  // initialize the basin
-  final basin = Basin(input);
-  basin.printBasin();
+  var minAnswer = 100000000;
+  for (int i = 0; i < 1000; i++) {
+    // initialize the basin
+    final basin = Basin(input);
 
-  final result = runExpeditionOneTime(basin);
-  print(result);
+    final result = runExpeditionOneTime(basin);
+    if (result != -1) {
+      if (result < minAnswer) {
+        minAnswer = result;
+      }
+    }
+  }
+  print(minAnswer);
 }
 
 int runExpeditionOneTime(Basin basin) {

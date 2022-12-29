@@ -294,12 +294,20 @@ Future<void> main() async {
   // store a mapping of the blizzards at every point in time, up to an arbitrary
   // number of minutes, since that is independent of the expedition
   Map<int, Map<Point, List<Blizzard>>> blizzardsByMinute = {};
-  int minute = 0;
-  blizzardsByMinute[minute] = basin.copyBlizzardsByPos();
-  for (int i = 0; i < 10; i++) {
-    minute++;
-    basin.moveBlizzards();
+  for (int minute = 0; minute < 10; minute++) {
     blizzardsByMinute[minute] = basin.copyBlizzardsByPos();
+    basin.moveBlizzards();
+  }
+
+  // verify the blizzards look good
+  for (int minute = 0; minute < 10; minute++) {
+    final blizzards = blizzardsByMinute[minute]!;
+    final newBasin = Basin.empty();
+    newBasin.values = basin.copyValues();
+    newBasin.blizzardsByPosition = blizzards;
+    newBasin.expeditionPos = basin.expeditionPos.copy();
+    print('Minute $minute');
+    newBasin.printBasin();
   }
 }
 

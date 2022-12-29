@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:io';
 import 'dart:math';
 
@@ -17,6 +18,8 @@ enum Facing {
 class Point {
   int x;
   int y;
+  bool explored = false;
+  Point? parent;
 
   Point(this.x, this.y);
 
@@ -321,96 +324,46 @@ int runExpeditionOneTime(Basin basin) {
 
     // check if we made it
     if (basin.isExpeditionAtEnd()) {
-      print('Expedition has ended');
+      print('Expedition has ended at minute $minute');
       return minute;
     }
   }
 }
 
-bool moveExpedition(Basin basin) {
-  // determine if we reach the end position first by going left, right, or down
-  final vertDist = abs(basin.expeditionPos.y, basin.endPosition.y);
-  final horizDist = abs(basin.expeditionPos.x, basin.endPosition.x);
+Point? runBreadthFirstSearch(Basin basin, Point startPos, Point endPos) {
+  // let Q be a queue
+  final queue = Queue<Point>();
 
-  Point? movingToPosition;
+  // label root as explored
+  startPos.explored = true;
 
-  final defaultProbability = 0.5;
+  // Q.enqueue(root)
+  queue.addFirst(startPos);
 
-  // move right (if haven't already moved down, and can)
-  if (movingToPosition == null) {
-    final newPos = Point(basin.expeditionPos.x + 1, basin.expeditionPos.y);
-    if (shoudlMoveToNewPosition(basin, newPos)) {
-      print('Moving right');
-      movingToPosition = newPos;
+  // while Q is not empty do
+  while (queue.isNotEmpty) {
+    // v := Q.dequeue()
+    final v = queue.removeLast(); // tested that this acts as a FIFO
+    // if v is the goal then return v
+    if (v == endPos) {
+      return v;
     }
-  }
-
-  // move down (if can)
-  if (randomlyReturnTrue(0.9)) {
-    final newPos = Point(basin.expeditionPos.x, basin.expeditionPos.y + 1);
-    if (shoudlMoveToNewPosition(basin, newPos)) {
-      print('Moving down');
-      movingToPosition = newPos;
-    }
-  }
-
-  // move down (if we didn't move right)
-  if (movingToPosition == null && randomlyReturnTrue(0.99)) {
-    final newPos = Point(basin.expeditionPos.x, basin.expeditionPos.y + 1);
-    if (shoudlMoveToNewPosition(basin, newPos)) {
-      print('Moving down');
-      movingToPosition = newPos;
-    }
-  }
-
-  // if we are not moving, but a blizzard is about to enter our position, then
-  // we need to move to avoid the blizzard
-  bool leftFirst = random.nextBool();
-  if (movingToPosition == null &&
-      basin.isExpeditionInBlizzard() &&
-      randomlyReturnTrue(0.95)) {
-    if (leftFirst) {
-      final newPos = Point(basin.expeditionPos.x - 1, basin.expeditionPos.y);
-      if (shoudlMoveToNewPosition(basin, newPos)) {
-        print('Moving left');
-        movingToPosition = newPos;
-      }
-    } else {
-      final newPos = Point(basin.expeditionPos.x, basin.expeditionPos.y - 1);
-      if (shoudlMoveToNewPosition(basin, newPos)) {
-        print('Moving up');
-        movingToPosition = newPos;
+    // TODO check which other points can be reached from this point at this
+    //      point in time. We should be able to tell what point in time we are
+    //      at by checking he number of parents that v has.
+    List<Point> possibleDestinations = [];
+    // for all edges from v to w in G.adjacentEdges(v) do
+    for (final w in possibleDestinations) {
+      // if w is not labeled as explored then
+      if (!w.explored) {
+        // label w as explored
+        w.explored = true;
+        w.parent = v;
+        // Q.enqueue(w)
+        queue.addFirst(w);
       }
     }
   }
-
-  // if we are still in a blizzard and haven't found a place to go, try other of up and left
-  if (movingToPosition == null && basin.isExpeditionInBlizzard()) {
-    if (leftFirst) {
-      final newPos = Point(basin.expeditionPos.x, basin.expeditionPos.y - 1);
-      if (shoudlMoveToNewPosition(basin, newPos)) {
-        print('Moving up');
-        movingToPosition = newPos;
-      }
-    } else {
-      final newPos = Point(basin.expeditionPos.x - 1, basin.expeditionPos.y);
-      if (shoudlMoveToNewPosition(basin, newPos)) {
-        print('Moving left');
-        movingToPosition = newPos;
-      }
-    }
-  }
-
-  // still in a blizzard and unable to move any direction we are dead
-  if (movingToPosition == null && basin.isExpeditionInBlizzard()) {
-    return false;
-  }
-
-  if (movingToPosition != null) {
-    // print('Moving expedition to $movingToPosition');
-    basin.moveExpedition(movingToPosition);
-  }
-  return true;
 }
 
 bool shoudlMoveToNewPosition(Basin basin, Point newPos) {

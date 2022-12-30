@@ -338,13 +338,16 @@ Future<void> main() async {
 
   // store a mapping of the blizzards at every point in time, up to an arbitrary
   // number of minutes, since that is independent of the expedition
+  print('Generating input blizzards');
   Map<int, Map<Point, List<Blizzard>>> blizzardsByMinute = {};
-  for (int minute = 0; minute < 10; minute++) {
+  for (int minute = 0; minute < 10000; minute++) {
     blizzardsByMinute[minute] = basin.copyBlizzardsByPos();
     basin.moveBlizzards();
   }
+  print('Done generating');
 
   // convet the mapping to a point-in-time mapping
+  print('Formatting blizzards');
   Map<PointInTime, List<Blizzard>> blizzardsAtPointInTime = {};
   for (final entry in blizzardsByMinute.entries) {
     final minute = entry.key;
@@ -356,10 +359,13 @@ Future<void> main() async {
       blizzardsAtPointInTime[pointInTime] = blizzards;
     }
   }
+  print('Done formatting');
 
   // find the solution
+  print('Running BFS...');
   final startPos = PointInTime(basin.startPosition, 0, false);
   final answer = runBreadthFirstSearch(basin, startPos, blizzardsAtPointInTime);
+  print('Done running BFS');
   print(answer);
 }
 
@@ -399,6 +405,7 @@ PointInTime? runBreadthFirstSearch(Basin basin, PointInTime startPos,
     }
   }
 
+  print('Unable to find solution using BFS');
   return null;
 }
 

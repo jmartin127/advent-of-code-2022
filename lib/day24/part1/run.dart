@@ -40,9 +40,8 @@ class Point {
 class PointInTime {
   Point point;
   int minute;
-  bool explored;
 
-  PointInTime(this.point, this.minute, this.explored);
+  PointInTime(this.point, this.minute);
 
   @override
   String toString() {
@@ -50,34 +49,31 @@ class PointInTime {
   }
 
   PointInTime oneMinuteLater() {
-    return PointInTime(point.copy(), minute + 1, false);
+    return PointInTime(point.copy(), minute + 1);
   }
 
   PointInTime oneMinuteLaterRight() {
-    return PointInTime(Point(point.x + 1, point.y), minute + 1, false);
+    return PointInTime(Point(point.x + 1, point.y), minute + 1);
   }
 
   PointInTime oneMinuteLaterLeft() {
-    return PointInTime(Point(point.x - 1, point.y), minute + 1, false);
+    return PointInTime(Point(point.x - 1, point.y), minute + 1);
   }
 
   PointInTime oneMinuteLaterUp() {
-    return PointInTime(Point(point.x, point.y - 1), minute + 1, false);
+    return PointInTime(Point(point.x, point.y - 1), minute + 1);
   }
 
   PointInTime oneMinuteLaterDown() {
-    return PointInTime(Point(point.x, point.y + 1), minute + 1, false);
+    return PointInTime(Point(point.x, point.y + 1), minute + 1);
   }
 
   @override
   bool operator ==(other) =>
-      other is PointInTime &&
-      point == other.point &&
-      minute == other.minute &&
-      explored == other.explored;
+      other is PointInTime && point == other.point && minute == other.minute;
 
   @override
-  int get hashCode => hash3(point, minute, explored);
+  int get hashCode => hash2(point, minute);
 
   bool matchesPoint(Point otherPoint) {
     return point == otherPoint;
@@ -355,7 +351,7 @@ Future<void> main() async {
     for (final innerEntry in blizzardsByPoint.entries) {
       final point = innerEntry.key;
       final blizzards = innerEntry.value;
-      final pointInTime = PointInTime(point, minute, false);
+      final pointInTime = PointInTime(point, minute);
       blizzardsAtPointInTime[pointInTime] = blizzards;
     }
   }
@@ -363,7 +359,7 @@ Future<void> main() async {
 
   // find the solution
   print('Running BFS...');
-  final startPos = PointInTime(basin.startPosition, 0, false);
+  final startPos = PointInTime(basin.startPosition, 0);
   final answer = runBreadthFirstSearch(basin, startPos, blizzardsAtPointInTime);
   print('Done running BFS');
   print(answer);
@@ -371,11 +367,14 @@ Future<void> main() async {
 
 PointInTime? runBreadthFirstSearch(Basin basin, PointInTime startPos,
     Map<PointInTime, List<Blizzard>> blizzardsAtPointInTime) {
+  Set<int> minutesTracked = {};
+  Set<PointInTime> visited = {};
+
   // let Q be a queue
   final queue = Queue<PointInTime>();
 
   // label root as explored
-  startPos.explored = true;
+  visited.add(startPos);
 
   // Q.enqueue(root)
   queue.addFirst(startPos);
@@ -389,15 +388,20 @@ PointInTime? runBreadthFirstSearch(Basin basin, PointInTime startPos,
       return v;
     }
 
+    if (!minutesTracked.contains(v.minute)) {
+      minutesTracked.add(v.minute);
+      print('\tBFS at minute: ${v.minute}');
+    }
+
     // check which other points can be reached from v at the next point in time
     final possibleDestinations =
         findValidNextPositions(blizzardsAtPointInTime, v, basin);
     // for all edges from v to w in G.adjacentEdges(v) do
     for (final w in possibleDestinations) {
       // if w is not labeled as explored then
-      if (!w.explored) {
+      if (!visited.contains(w)) {
         // label w as explored
-        w.explored = true;
+        visited.add(w);
         // if we cared about the path we could also set: w.parent = v;
         // Q.enqueue(w)
         queue.addFirst(w);
@@ -428,8 +432,7 @@ List<PointInTime> findValidNextPositions(
   // of the board
   List<PointInTime> validNextMoves = [];
   for (final possibleNextMove in possibleNextMoves) {
-    if (isValidMove(
-        possibleNextMove, basin.endPosition, blizzardsAtPointInTime, basin)) {
+    if (isValidMove(possibleNextMove, blizzardsAtPointInTime, basin)) {
       validNextMoves.add(possibleNextMove);
     }
   }
@@ -437,9 +440,13 @@ List<PointInTime> findValidNextPositions(
   return validNextMoves;
 }
 
-bool isValidMove(PointInTime pointInTime, Point endPoint,
+bool isValidMove(PointInTime pointInTime,
     Map<PointInTime, List<Blizzard>> blizzardsAtPointInTime, Basin basin) {
-  if (pointInTime.matchesPoint(endPoint)) {
+  if (pointInTime.matchesPoint(basin.startPosition)) {
+    return true;
+  }
+
+  if (pointInTime.matchesPoint(basin.endPosition)) {
     return true;
   }
 

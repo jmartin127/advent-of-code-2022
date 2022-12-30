@@ -52,6 +52,42 @@ Future<void> main() async {
     result += snafu.toInt();
   }
   print(result);
+  // answer in decimal on real data: 34279402189875
 
-  // answer in decimal: 34279402189875
+  // generate a set of snafu numbers
+  // print(Snafu('1121-1110-1=0'.split('')).toInt());
+  // -----------------------------------------
+  final finalAnswer = Snafu('2-00=12=21-0=01--000'.split('')).toInt();
+  print('$finalAnswer');
+  if (finalAnswer > result) {
+    print('too high');
+  } else if (finalAnswer < result) {
+    print('too low');
+  } else {
+    print('correct!');
+  }
+
+  // incorrect: 02-00=12=21-0=01--000 (had a leading zero)
+}
+
+Snafu toSnafu(int input) {
+  final vals = input.toString().split('');
+
+  int place = 0;
+  Snafu answer = Snafu([]);
+  for (int i = vals.length - 1; i >= 0; i--) {
+    final char = vals[i];
+    final placePowerTen = pow(10, place).toInt();
+    final timesVal = int.parse(char);
+    final result = placePowerTen * timesVal;
+    print(placePowerTen);
+    if (result == 5 && answer.vals.isEmpty) {
+      answer = Snafu(['1', '0']);
+      place++;
+      continue;
+    }
+    throw Exception('need to add $result to the current snafu');
+    place++;
+  }
+  return answer;
 }

@@ -18,8 +18,6 @@ enum Facing {
 class Point {
   int x;
   int y;
-  bool explored = false;
-  Point? parent;
 
   Point(this.x, this.y);
 
@@ -36,6 +34,53 @@ class Point {
   @override
   String toString() {
     return 'x: $x, y: $y';
+  }
+}
+
+class PointInTime {
+  Point point;
+  int minute;
+  bool explored;
+
+  PointInTime(this.point, this.minute, this.explored);
+
+  @override
+  String toString() {
+    return 'Point: $point, Minute: $minute';
+  }
+
+  PointInTime oneMinuteLater() {
+    return PointInTime(point.copy(), minute + 1, false);
+  }
+
+  PointInTime oneMinuteLaterRight() {
+    return PointInTime(Point(point.x + 1, point.y), minute + 1, false);
+  }
+
+  PointInTime oneMinuteLaterLeft() {
+    return PointInTime(Point(point.x - 1, point.y), minute + 1, false);
+  }
+
+  PointInTime oneMinuteLaterUp() {
+    return PointInTime(Point(point.x, point.y - 1), minute + 1, false);
+  }
+
+  PointInTime oneMinuteLaterDown() {
+    return PointInTime(Point(point.x, point.y + 1), minute + 1, false);
+  }
+
+  @override
+  bool operator ==(other) =>
+      other is PointInTime &&
+      point == other.point &&
+      minute == other.minute &&
+      explored == other.explored;
+
+  @override
+  int get hashCode => hash3(point, minute, explored);
+
+  bool matchesPoint(Point otherPoint) {
+    return point == otherPoint;
   }
 }
 
@@ -299,21 +344,29 @@ Future<void> main() async {
     basin.moveBlizzards();
   }
 
-  // verify the blizzards look good
-  for (int minute = 0; minute < 10; minute++) {
-    final blizzards = blizzardsByMinute[minute]!;
-    final newBasin = Basin.empty();
-    newBasin.values = basin.copyValues();
-    newBasin.blizzardsByPosition = blizzards;
-    newBasin.expeditionPos = basin.expeditionPos.copy();
-    print('Minute $minute');
-    newBasin.printBasin();
+  // convet the mapping to a point-in-time mapping
+  Map<PointInTime, List<Blizzard>> blizzardsAtPointInTime = {};
+  for (final entry in blizzardsByMinute.entries) {
+    final minute = entry.key;
+    final blizzardsByPoint = entry.value;
+    for (final innerEntry in blizzardsByPoint.entries) {
+      final point = innerEntry.key;
+      final blizzards = innerEntry.value;
+      final pointInTime = PointInTime(point, minute, false);
+      blizzardsAtPointInTime[pointInTime] = blizzards;
+    }
   }
+
+  // find the solution
+  final startPos = PointInTime(basin.startPosition, 0, false);
+  final answer = runBreadthFirstSearch(basin, startPos, blizzardsAtPointInTime);
+  print(answer);
 }
 
-Point? runBreadthFirstSearch(Basin basin, Point startPos, Point endPos) {
+PointInTime? runBreadthFirstSearch(Basin basin, PointInTime startPos,
+    Map<PointInTime, List<Blizzard>> blizzardsAtPointInTime) {
   // let Q be a queue
-  final queue = Queue<Point>();
+  final queue = Queue<PointInTime>();
 
   // label root as explored
   startPos.explored = true;
@@ -326,45 +379,64 @@ Point? runBreadthFirstSearch(Basin basin, Point startPos, Point endPos) {
     // v := Q.dequeue()
     final v = queue.removeLast(); // tested that this acts as a FIFO
     // if v is the goal then return v
-    if (v == endPos) {
+    if (v.matchesPoint(basin.endPosition)) {
       return v;
     }
-    // TODO check which other points can be reached from this point at this
-    //      point in time. We should be able to tell what point in time we are
-    //      at by checking he number of parents that v has.
-    List<Point> possibleDestinations = [];
+
+    // check which other points can be reached from v at the next point in time
+    final possibleDestinations =
+        findValidNextPositions(blizzardsAtPointInTime, v, basin);
     // for all edges from v to w in G.adjacentEdges(v) do
     for (final w in possibleDestinations) {
       // if w is not labeled as explored then
       if (!w.explored) {
         // label w as explored
         w.explored = true;
-        w.parent = v;
+        // if we cared about the path we could also set: w.parent = v;
         // Q.enqueue(w)
         queue.addFirst(w);
       }
     }
   }
+
+  return null;
 }
 
-bool shoudlMoveToNewPosition(Basin basin, Point newPos) {
-  // reached the end, stop
-  if (basin.isEndPosition(newPos)) {
+List<PointInTime> findValidNextPositions(
+    Map<PointInTime, List<Blizzard>> blizzardsAtPointInTime,
+    PointInTime pos,
+    Basin basin) {
+  // NOTE: need to include current position, if we are going to wait where we are
+  //       but in including the current position, it would be incrementing the
+  //       minte by one.
+  List<PointInTime> possibleNextMoves = [
+    pos.oneMinuteLater(),
+    pos.oneMinuteLaterUp(),
+    pos.oneMinuteLaterDown(),
+    pos.oneMinuteLaterLeft(),
+    pos.oneMinuteLaterRight()
+  ];
+
+  // filter out points that will have a blizzard at that time, or that are off
+  // of the board
+  List<PointInTime> validNextMoves = [];
+  for (final possibleNextMove in possibleNextMoves) {
+    if (isValidMove(
+        possibleNextMove, basin.endPosition, blizzardsAtPointInTime, basin)) {
+      validNextMoves.add(possibleNextMove);
+    }
+  }
+
+  return validNextMoves;
+}
+
+bool isValidMove(PointInTime pointInTime, Point endPoint,
+    Map<PointInTime, List<Blizzard>> blizzardsAtPointInTime, Basin basin) {
+  if (pointInTime.matchesPoint(endPoint)) {
     return true;
   }
 
   // no blizzard and still in basin
-  return (!basin.blizzardsByPosition.containsKey(newPos) &&
-      basin.isWithinBasin(newPos));
-}
-
-int abs(int a, int b) {
-  if (a > b) {
-    return a - b;
-  }
-  return b - a;
-}
-
-bool randomlyReturnTrue(double fraction) {
-  return random.nextDouble() <= fraction;
+  return (!blizzardsAtPointInTime.containsKey(pointInTime) &&
+      basin.isWithinBasin(pointInTime.point));
 }
